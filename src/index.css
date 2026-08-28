@@ -1,12 +1,86 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #0B3D91;
+  --color-primary-dark: #082C69;
+  --color-primary-light: #1856BD;
+  --color-accent-warm: #C1502E;
+  --color-accent-warm-dark: #A33F22;
+  --color-accent-warm-light: #FDF2EF;
+  --color-accent-green: #1F6E43;
+  --color-accent-green-dark: #175333;
+  --color-accent-green-light: #EDF7F1;
+  --color-cta: #FFC72C;
+  --color-cta-hover: #F0B719;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-heading: 'Poppins', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
 @layer base {
+  :root {
+    --primary: #0B3D91;
+    --primary-dark: #082C69;
+    --accent-warm: #C1502E;
+    --accent-green: #1F6E43;
+    --cta-gold: #FFC72C;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    color: #1E293B;
+    overflow-x: hidden;
+    max-width: 100vw;
   }
-  h1, h2, h3, h4, .font-heading {
+  
+  html {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  /* Display Font reserved exclusively for prominent headings >= 20px */
+  .font-display {
+    font-family: 'Fraunces', Georgia, serif;
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+  }
+
+  .font-heading {
     font-family: 'Poppins', 'Plus Jakarta Sans', system-ui, sans-serif;
   }
+}
+
+/* Unified Design System Component Utilities */
+.salvo-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.salvo-badge-warm {
+  background-color: #C1502E;
+  color: #FFFFFF;
+}
+
+.salvo-badge-green {
+  background-color: #1F6E43;
+  color: #FFFFFF;
+}
+
+.salvo-badge-neutral {
+  background-color: #F1F5F9;
+  color: #475569;
 }
 
 /* Custom scrollbars */
@@ -25,15 +99,55 @@
   background: #94a3b8;
 }
 
-/* Leaflet Custom Marker & Popup Styles */
+/* Leaflet Custom Marker, Tooltip & Attribution Styles */
 .leaflet-container {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   z-index: 10;
 }
 
-.custom-store-pin {
+.custom-store-pin,
+.custom-landmark-pin,
+.custom-sale-pin,
+.salvo-cluster-marker {
   background: transparent;
   border: none;
+}
+
+.leaflet-control-attribution {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  color: #334155 !important;
+  padding: 4px 10px !important;
+  border-radius: 8px 0 0 0 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.08) !important;
+  border-left: 1px solid #E2E8F0 !important;
+  border-top: 1px solid #E2E8F0 !important;
+}
+
+.leaflet-control-attribution a {
+  color: #0B3D91 !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+
+.leaflet-control-attribution a:hover {
+  text-decoration: underline !important;
+}
+
+.salvo-landmark-tooltip {
+  background-color: #FFFFFF !important;
+  color: #1E293B !important;
+  border: 1px solid #CBD5E1 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+  padding: 5px 10px !important;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif !important;
+  font-weight: 700 !important;
+}
+
+.salvo-landmark-tooltip::before {
+  border-top-color: #FFFFFF !important;
 }
 
 .leaflet-popup-content-wrapper {
@@ -71,4 +185,125 @@
 .pulse-ring-effect {
   animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Map visual color grading & enhanced clarity */
+.salvo-map-clean-tiles,
+.salvo-hero-map-tiles {
+  filter: contrast(104%) saturate(108%) brightness(99%);
+}
+
+.salvo-map-hot-tiles {
+  filter: contrast(102%) saturate(105%);
+}
+
+.salvo-map-esri-tiles {
+  filter: contrast(105%) saturate(110%);
+}
+
+.salvo-map-satellite-tiles {
+  filter: contrast(108%) brightness(102%);
+}
+
+/* =========================================================
+   DYNAMIC SKY & MOVING CLOUDS ANIMATIONS (SALVADOR WEATHER)
+========================================================= */
+@keyframes cloudDriftSlow {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(240%);
+  }
+}
+
+@keyframes cloudDriftMedium {
+  0% {
+    transform: translateX(-150%);
+  }
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+@keyframes cloudDriftFast {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes skyAtmosphere {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes sunGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+    filter: drop-shadow(0 0 15px rgba(255, 199, 44, 0.8));
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+    filter: drop-shadow(0 0 28px rgba(255, 160, 0, 0.95));
+  }
+}
+
+@keyframes sunRotateSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes breezeFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(2deg);
+  }
+}
+
+.animate-cloud-drift-slow {
+  animation: cloudDriftSlow 32s linear infinite;
+}
+
+.animate-cloud-drift-medium {
+  animation: cloudDriftMedium 22s linear infinite;
+}
+
+.animate-cloud-drift-fast {
+  animation: cloudDriftFast 15s linear infinite;
+}
+
+.animate-sky-gradient {
+  background-size: 200% 200%;
+  animation: skyAtmosphere 18s ease infinite;
+}
+
+.animate-sun-glow {
+  animation: sunGlow 4s ease-in-out infinite;
+}
+
+.animate-sun-spin-slow {
+  animation: sunRotateSlow 24s linear infinite;
+}
+
+.animate-breeze {
+  animation: breezeFloat 5s ease-in-out infinite;
+}
+
 

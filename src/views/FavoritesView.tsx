@@ -1,6 +1,7 @@
 import React from 'react';
 import { Store } from '../types';
 import { StoreCard } from '../components/StoreCard';
+import { isValidPublicStore } from '../utils/storeValidation';
 import { Heart, Compass, Sparkles } from 'lucide-react';
 
 interface FavoritesViewProps {
@@ -20,6 +21,8 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
   onOpenStreetView,
   onExploreClick,
 }) => {
+  const validFavorites = favoriteStores.filter(isValidPublicStore);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Header */}
@@ -38,15 +41,15 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
           </p>
         </div>
 
-        {favoriteStores.length > 0 && (
+        {validFavorites.length > 0 && (
           <span className="px-3.5 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs rounded-2xl self-start sm:self-auto">
-            {favoriteStores.length} {favoriteStores.length === 1 ? 'loja favorita' : 'lojas favoritas'}
+            {validFavorites.length} {validFavorites.length === 1 ? 'loja favorita' : 'lojas favoritas'}
           </span>
         )}
       </div>
 
       {/* Grid or Friendly Empty State */}
-      {favoriteStores.length === 0 ? (
+      {validFavorites.length === 0 ? (
         <div className="bg-white rounded-3xl p-10 sm:p-16 text-center border border-slate-200 shadow-sm max-w-lg mx-auto">
           <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-4 text-rose-400">
             <Heart className="w-10 h-10 stroke-1" />
@@ -62,7 +65,7 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
 
           <button
             onClick={onExploreClick}
-            className="w-full sm:w-auto px-8 h-12 bg-[#0B4F8A] hover:bg-[#083a66] text-white font-heading font-bold text-xs uppercase tracking-wider rounded-2xl shadow-md inline-flex items-center justify-center gap-2 transition-all active:scale-98"
+            className="w-full sm:w-auto px-8 h-12 bg-[#0B3D91] hover:bg-[#082C69] text-white font-heading font-bold text-xs uppercase tracking-wider rounded-2xl shadow-md inline-flex items-center justify-center gap-2 transition-all active:scale-98 cursor-pointer"
           >
             <Compass className="w-4 h-4" />
             <span>Explorar o Mapa de Salvador</span>
@@ -70,7 +73,7 @@ export const FavoritesView: React.FC<FavoritesViewProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {favoriteStores.map((store) => (
+          {validFavorites.map((store) => (
             <StoreCard
               key={store.id}
               store={store}

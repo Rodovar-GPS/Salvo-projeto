@@ -74,6 +74,23 @@ export interface EventItem {
 }
 
 export type StoreCategory =
+  | 'Restaurantes & Gastronomia'
+  | 'Bares, Botecos & Vida Noturna'
+  | 'Moda, Roupas & Acessórios'
+  | 'Beleza, Barbearias & Estética'
+  | 'Mercados, Padarias & Empórios'
+  | 'Saúde, Farmácias & Bem-Estar'
+  | 'Artesanato, Cultura & Lembranças'
+  | 'Serviços Automotivos & Mecânica'
+  | 'Pet Shop, Veterinária & Acessórios'
+  | 'Casa, Móveis & Decoração'
+  | 'Construção, Elétrica & Reformas'
+  | 'Tecnologia, Celulares & Informática'
+  | 'Serviços Profissionais & Escritórios'
+  | 'Esportes, Academias & Aventura'
+  | 'Educação, Idiomas & Cursos'
+  | 'Turismo, Passeios & Hotelaria'
+  | 'Eventos, Festas & Fotografia'
   | 'Gastronomia & Açaí'
   | 'Moda & Praia'
   | 'Artesanato Baiano'
@@ -102,6 +119,7 @@ export interface Review {
   rating: number; // 1 to 5
   comment: string;
   date: string;
+  edited?: boolean;
 }
 
 export type OfferStatus = 'ACTIVE' | 'SCHEDULED' | 'EXPIRED' | 'PAUSED' | 'DRAFT';
@@ -145,6 +163,35 @@ export interface StoreAmenities {
   acceptsCredit?: boolean;
   delivery?: boolean;
   outdoorSeating?: boolean;
+}
+
+export interface NeighborhoodSpot {
+  name: string;
+  photo?: string;
+  description?: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+}
+
+export interface NeighborhoodGuideInfo {
+  tagline: string;
+  description: string;
+  vibe: string;
+  icon: string;
+  color: string;
+  macro_region?: string;
+  bannerImage?: string;
+  population?: number;
+  area_km2?: number | string;
+  founding_year?: number | string;
+  history_text?: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  bestSpots?: (string | NeighborhoodSpot)[];
 }
 
 export interface NeighborhoodDetails {
@@ -209,6 +256,7 @@ export interface Store {
   approvalStatus: 'approved' | 'pending' | 'rejected';
   distanceKm?: number;
   isFeatured?: boolean;
+  followersCount?: number;
   totalViews?: number;
   totalClicks?: number;
 }
@@ -316,6 +364,9 @@ export type ActiveTab =
   | 'offers'
   | 'for_you'
   | 'events'
+  | 'weather_traffic'
+  | 'salvo_official'
+  | 'salvooficial'
   | 'chat'
   | 'favorites'
   | 'profile'
@@ -401,16 +452,26 @@ export interface StoreFollow {
 
 // Relacionamento 3: LOJA -> LOJA (Parceria)
 export type StorePartnershipStatus = 'proposed' | 'active' | 'declined' | 'paused' | 'ended';
-export type StorePartnershipType = 'cross_promo' | 'joint_event' | 'supply_partner' | 'combo_deal';
+export type StorePartnershipType =
+  | 'cross_promo'
+  | 'joint_event'
+  | 'supply_partner'
+  | 'combo_deal'
+  | 'shared_discount'
+  | 'collective_event'
+  | 'combo_service'
+  | 'supplier';
 
 export interface StorePartnership {
   id: string;
   storeAId: string;
   storeBId: string;
-  partnershipType: StorePartnershipType;
+  partnershipType?: StorePartnershipType;
+  type?: StorePartnershipType;
   title: string;
   description: string;
   status: StorePartnershipStatus;
+  proposedByProfileId?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -569,6 +630,7 @@ export type SocialNotificationType =
   | 'post_comment'
   | 'post_share'
   | 'partnership_invite'
+  | 'partnership_proposed'
   | 'partnership_accepted'
   | 'partnership_declined'
   | 'live_started';
@@ -584,7 +646,10 @@ export interface SocialNotification {
   targetPostId?: string;
   friendshipId?: string;
   partnershipId?: string;
+  partnershipTitle?: string;
   targetStoreId?: string;
+  storeId?: string;
+  storeName?: string;
   status?: 'pending' | 'accepted' | 'declined';
   read: boolean;
   createdAt: string;
@@ -621,3 +686,89 @@ export interface PaginatedResponse<T> {
   items: T[];
   pagination: PaginationMeta;
 }
+
+// ==========================================
+// 🛡️ ALERTAS DE FURTO & SEGURANÇA COMUNITÁRIA
+// ==========================================
+export type TheftIncidentType =
+  | 'furto_celular'
+  | 'furto_veiculo'
+  | 'furto_bolsa'
+  | 'furto_bicicleta'
+  | 'arrombamento'
+  | 'tentativa_golpe'
+  | 'ponto_atencao';
+
+export interface TheftIncident {
+  id: string;
+  type: TheftIncidentType;
+  title: string;
+  description: string;
+  neighborhood: string;
+  street?: string;
+  address?: string;
+  referencePoint?: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  date: string; // DD/MM/AAAA or YYYY-MM-DD
+  time: string; // HH:mm
+  occurredAtDate?: string;
+  occurredAtTime?: string;
+  images: string[];
+  videoUrl?: string;
+  reporterName?: string;
+  reporterContact?: string;
+  reporterRole?: UserRole;
+  reporterId?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
+  verifiedByAdmin: boolean;
+  adminNote?: string;
+  createdAt: string;
+  approvedAt?: string;
+  severity: 'alta' | 'media' | 'baixa';
+}
+
+
+// ==========================================
+// 🧭 SISTEMA DE ROTAS & TRANSPORTE SALVADOR
+// ==========================================
+export interface RouteDestinationTarget {
+  id: string;
+  name: string;
+  type: 'store' | 'landmark' | 'neighborhood' | 'custom_point';
+  category?: string;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+  neighborhood?: string;
+  address?: string;
+}
+
+export interface SalvadorWeatherInfo {
+  temperature: number;
+  apparentTemperature: number;
+  condition: string;
+  conditionIcon: string;
+  precipitation: number;
+  humidity: number;
+  windSpeed: number;
+  isDay: boolean;
+  updatedAt: string;
+}
+
+export interface SalvadorTransitOption {
+  type: 'bus' | 'metro' | 'car' | 'walking';
+  title: string;
+  linesOrStations: string[];
+  estimatedMinutes: number;
+  distanceKm: number;
+  fareText: string;
+  description: string;
+  integrationNote?: string;
+  trafficStatus?: 'Livre' | 'Moderado' | 'Intenso' | 'Lento';
+}
+

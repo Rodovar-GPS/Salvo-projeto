@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Store, StoreCategory, SalvadorNeighborhood, Offer } from '../types';
 import { SALVADOR_NEIGHBORHOODS, STORE_CATEGORIES } from '../data/mockData';
+import { isValidPublicStore } from '../utils/storeValidation';
 import { OfferCard } from '../components/OfferCard';
 import { ClearableInput } from '../components/ClearableInput';
 import {
@@ -36,10 +37,11 @@ export const OffersView: React.FC<OffersViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<StoreCategory | 'Todas'>('Todas');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
 
-  // Flatten all active offers with their parent store
+  // Flatten all active offers with their parent store (from valid public stores only)
   const allOffersWithStores = useMemo(() => {
     const list: { offer: Offer; store: Store }[] = [];
     stores.forEach((store) => {
+      if (!isValidPublicStore(store)) return;
       if (store.offers && store.offers.length > 0) {
         store.offers.forEach((offer) => {
           // Only show active offers (status !== 'EXPIRED' && status !== 'PAUSED' && status !== 'DRAFT')

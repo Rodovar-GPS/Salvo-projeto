@@ -52,76 +52,157 @@ interface CategoryOption {
 
 export const BRAZILIAN_CATEGORIES: CategoryOption[] = [
   {
-    name: 'Gastronomia & Açaí',
-    label: 'Gastronomia & Açaí',
-    icon: '🍨',
+    name: 'Restaurantes & Gastronomia',
+    label: 'Restaurantes & Gastronomia',
+    icon: '🍽️',
     badge: 'Mais Popular',
     defaultImage:
       'https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&w=600&q=80',
-    description: 'Açaí, tapiocas, moquecas, acarajé, lanches e restaurantes.',
+    description: 'Acarajé, moquecas, açaí, frutos do mar, pizzarias, bistrôs e culinária baiana.',
   },
   {
-    name: 'Moda & Praia',
-    label: 'Moda Praia & Roupas',
-    icon: '🩱',
+    name: 'Bares, Botecos & Vida Noturna',
+    label: 'Bares, Botecos & Vida Noturna',
+    icon: '🍻',
+    badge: 'Noite & Lazer',
+    defaultImage:
+      'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=600&q=80',
+    description: 'Botecos tradicionais, choperias, samba ao vivo, beach clubs e drinks.',
+  },
+  {
+    name: 'Moda, Roupas & Acessórios',
+    label: 'Moda, Roupas & Acessórios',
+    icon: '👗',
     badge: 'Alta Procura',
     defaultImage:
       'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=600&q=80',
-    description: 'Biquínis, moda praia, vestidos, sapatos e acessórios de verão.',
+    description: 'Moda praia, vestuário feminino e masculino, calçados, bolsas, óticas e joias.',
   },
   {
-    name: 'Artesanato Baiano',
-    label: 'Artesanato & Lembranças',
+    name: 'Beleza, Barbearias & Estética',
+    label: 'Beleza, Barbearias & Estética',
+    icon: '✂️',
+    badge: 'Estilo & Cuidados',
+    defaultImage:
+      'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80',
+    description: 'Barbearias, salões de beleza, manicure, estética, spas urbanos e maquiagem.',
+  },
+  {
+    name: 'Mercados, Padarias & Empórios',
+    label: 'Mercados, Padarias & Empórios',
+    icon: '🛒',
+    badge: 'Dia a Dia',
+    defaultImage:
+      'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80',
+    description: 'Supermercados, hortifruti, padarias artesanais, empórios e distribuidoras de bebidas.',
+  },
+  {
+    name: 'Saúde, Farmácias & Bem-Estar',
+    label: 'Saúde, Farmácias & Bem-Estar',
+    icon: '💊',
+    badge: 'Saúde & Vida',
+    defaultImage:
+      'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80',
+    description: 'Drogarias, farmácias de manipulação, clínicas, dentistas e suplementação.',
+  },
+  {
+    name: 'Artesanato, Cultura & Lembranças',
+    label: 'Artesanato, Cultura & Lembranças',
     icon: '🏺',
     badge: 'Cultura SSA',
     defaultImage:
       'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=600&q=80',
-    description: 'Fitas do Bonfim, berimbaus, cerâmica, quadros e souvenirs.',
+    description: 'Fitas do Bonfim, cerâmica, berimbaus, quadros, souvenirs e arte afro-baiana.',
   },
   {
-    name: 'Beleza & Barbearia',
-    label: 'Barbearia & Salão de Beleza',
-    icon: '💈',
-    badge: 'Essencial',
+    name: 'Serviços Automotivos & Mecânica',
+    label: 'Serviços Automotivos & Mecânica',
+    icon: '🚗',
+    badge: 'Auto & Moto',
     defaultImage:
-      'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=600&q=80',
-    description: 'Corte de cabelo, barba, manicure, estética e spa urbano.',
+      'https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=600&q=80',
+    description: 'Oficinas mecânicas, auto centers, lava-jato, borracharias e troca de óleo.',
   },
   {
-    name: 'Mercadinhos & Empórios',
-    label: 'Mercadinhos & Empórios',
-    icon: '🥥',
-    badge: 'Bairro',
+    name: 'Pet Shop, Veterinária & Acessórios',
+    label: 'Pet Shop, Veterinária & Acessórios',
+    icon: '🐾',
+    badge: 'Mundo Pet',
     defaultImage:
-      'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80',
-    description: 'Hortifruti, temperos baianos, conveniências e empórios locais.',
+      'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=600&q=80',
+    description: 'Pet shops, clínicas veterinárias, banho e tosa, rações e hotelzinho pet.',
   },
   {
-    name: 'Esportes & Aventura',
-    label: 'Esportes, Surf & Náutica',
-    icon: '🏄‍♂️',
-    badge: 'Praia & Orla',
+    name: 'Casa, Móveis & Decoração',
+    label: 'Casa, Móveis & Decoração',
+    icon: '🛋️',
+    badge: 'Lar & Conforto',
     defaultImage:
-      'https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=600&q=80',
-    description: 'Aulas de surf, SUP, bike, academias e suplementos.',
+      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80',
+    description: 'Móveis sob medida, decoração, iluminação, utilidades do lar e cama/mesa/banho.',
   },
   {
-    name: 'Saúde & Bem-Estar',
-    label: 'Saúde, Farmácia & Bem-Estar',
-    icon: '🌿',
-    badge: 'Saúde',
-    defaultImage:
-      'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80',
-    description: 'Farmácias, produtos naturais, fitoterápicos e consultórios.',
-  },
-  {
-    name: 'Serviços & Reparos',
-    label: 'Serviços Gerais & Oficinas',
-    icon: '🔧',
-    badge: 'Serviços',
+    name: 'Construção, Elétrica & Reformas',
+    label: 'Construção, Elétrica & Reformas',
+    icon: '🔨',
+    badge: 'Obras & Reparos',
     defaultImage:
       'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=600&q=80',
-    description: 'Chaveiros, elétrica, hidráulica, oficinas mecânicas e informática.',
+    description: 'Materiais de construção, ferragens, tintas, eletricistas, encanadores e reparos.',
+  },
+  {
+    name: 'Tecnologia, Celulares & Informática',
+    label: 'Tecnologia, Celulares & Informática',
+    icon: '📱',
+    badge: 'Tech & Digital',
+    defaultImage:
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80',
+    description: 'Assistência técnica de celulares, computadores, acessórios e periféricos.',
+  },
+  {
+    name: 'Serviços Profissionais & Escritórios',
+    label: 'Serviços Profissionais & Escritórios',
+    icon: '💼',
+    badge: 'Empresarial',
+    defaultImage:
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80',
+    description: 'Advocacia, contabilidade, imobiliárias, seguros, gráficas e consultorias.',
+  },
+  {
+    name: 'Esportes, Academias & Aventura',
+    label: 'Esportes, Academias & Aventura',
+    icon: '🏄‍♂️',
+    badge: 'Praia & Fitness',
+    defaultImage:
+      'https://images.unsplash.com/photo-1502680390469-be75c86b636f?auto=format&fit=crop&w=600&q=80',
+    description: 'Academias, aulas de surf, beach tennis, crossfit, náutica e esportes de orla.',
+  },
+  {
+    name: 'Educação, Idiomas & Cursos',
+    label: 'Educação, Idiomas & Cursos',
+    icon: '📚',
+    badge: 'Conhecimento',
+    defaultImage:
+      'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=80',
+    description: 'Escolas de idiomas, música, dança, cursos profissionalizantes e reforço.',
+  },
+  {
+    name: 'Turismo, Passeios & Hotelaria',
+    label: 'Turismo, Passeios & Hotelaria',
+    icon: '🏖️',
+    badge: 'Turismo SSA',
+    defaultImage:
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80',
+    description: 'Pousadas, hotéis, agências de passeios náuticos, receptivos e transfers.',
+  },
+  {
+    name: 'Eventos, Festas & Fotografia',
+    label: 'Eventos, Festas & Fotografia',
+    icon: '🎉',
+    badge: 'Festas & Shows',
+    defaultImage:
+      'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=600&q=80',
+    description: 'Buffets, fotógrafos, assessoria de casamentos, som, iluminação e espaço de festas.',
   },
 ];
 

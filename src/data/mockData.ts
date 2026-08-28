@@ -1,4 +1,4 @@
-import { Store, User, ChatConversation, SalvadorNeighborhood, StoreCategory, ModeratorProfile, ModerationAuditLog, Friendship, UserFollow, StoreFollow, StorePartnership, SocialNotification } from '../types';
+import { Store, User, ChatConversation, SalvadorNeighborhood, StoreCategory, ModeratorProfile, ModerationAuditLog, Friendship, UserFollow, StoreFollow, StorePartnership, SocialNotification, NeighborhoodGuideInfo, NeighborhoodSpot } from '../types';
 
 export const SALVADOR_NEIGHBORHOODS: string[] = [
   'Acupe',
@@ -683,15 +683,24 @@ export const NEIGHBORHOOD_SALES_EXAMPLES: NeighborhoodSaleExample[] = [
 ];
 
 
-export const STORE_CATEGORIES: { name: StoreCategory; icon: string; color: string }[] = [
-  { name: 'Gastronomia & Açaí', icon: '🍨', color: '#E8552B' },
-  { name: 'Moda & Praia', icon: '🩱', color: '#0B4F8A' },
-  { name: 'Artesanato Baiano', icon: '🏺', color: '#FFC72C' },
-  { name: 'Beleza & Barbearia', icon: '💈', color: '#2E9E5B' },
-  { name: 'Mercadinhos & Empórios', icon: '🥥', color: '#8B5CF6' },
-  { name: 'Esportes & Aventura', icon: '🏄‍♂️', color: '#06B6D4' },
-  { name: 'Serviços & Reparos', icon: '🔧', color: '#64748B' },
-  { name: 'Saúde & Bem-Estar', icon: '🌿', color: '#10B981' },
+export const STORE_CATEGORIES: { name: StoreCategory; icon: string; color: string; emoji: string }[] = [
+  { name: 'Restaurantes & Gastronomia', icon: 'UtensilsCrossed', color: '#C1502E', emoji: '🍽️' },
+  { name: 'Bares, Botecos & Vida Noturna', icon: 'Beer', color: '#D97706', emoji: '🍻' },
+  { name: 'Moda, Roupas & Acessórios', icon: 'Shirt', color: '#0B3D91', emoji: '👗' },
+  { name: 'Beleza, Barbearias & Estética', icon: 'Scissors', color: '#8B5CF6', emoji: '✂️' },
+  { name: 'Mercados, Padarias & Empórios', icon: 'ShoppingBag', color: '#059669', emoji: '🛒' },
+  { name: 'Saúde, Farmácias & Bem-Estar', icon: 'HeartPulse', color: '#1F6E43', emoji: '💊' },
+  { name: 'Artesanato, Cultura & Lembranças', icon: 'Palette', color: '#E11D48', emoji: '🏺' },
+  { name: 'Serviços Automotivos & Mecânica', icon: 'Car', color: '#475569', emoji: '🚗' },
+  { name: 'Pet Shop, Veterinária & Acessórios', icon: 'Dog', color: '#F97316', emoji: '🐾' },
+  { name: 'Casa, Móveis & Decoração', icon: 'Home', color: '#6366F1', emoji: '🛋️' },
+  { name: 'Construção, Elétrica & Reformas', icon: 'Hammer', color: '#0284C7', emoji: '🔨' },
+  { name: 'Tecnologia, Celulares & Informática', icon: 'Smartphone', color: '#2563EB', emoji: '📱' },
+  { name: 'Serviços Profissionais & Escritórios', icon: 'Briefcase', color: '#334155', emoji: '💼' },
+  { name: 'Esportes, Academias & Aventura', icon: 'Waves', color: '#0284C7', emoji: '🏄‍♂️' },
+  { name: 'Educação, Idiomas & Cursos', icon: 'GraduationCap', color: '#1D4ED8', emoji: '📚' },
+  { name: 'Turismo, Passeios & Hotelaria', icon: 'Compass', color: '#D97706', emoji: '🏖️' },
+  { name: 'Eventos, Festas & Fotografia', icon: 'PartyPopper', color: '#EC4899', emoji: '🎉' },
 ];
 
 export const INITIAL_USERS: User[] = [
@@ -1639,7 +1648,530 @@ export const INITIAL_STORES: Store[] = [
         priceText: 'De R$ 85,00 por R$ 68,00',
         description: 'Hidratação profunda pós-sol com aroma inconfundível.',
         expiresAt: '10/10/2026',
-        category: 'Saúde & Bem-Estar',
+        category: 'Saúde, Farmácias & Bem-Estar',
+      }
+    ],
+    reviews: []
+  },
+  {
+    id: 'store-10',
+    ownerId: 'user-merchant-10',
+    name: 'Boteco & Samba do França',
+    slug: 'boteco-samba-do-franca',
+    category: 'Bares, Botecos & Vida Noturna',
+    description: 'Tradicional boteco soteropolitano no coração do Rio Vermelho. Petiscos baianos autênticos, caldinho de sururu, cerveja estupidamente gelada e roda de samba.',
+    logo: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=200&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=900&q=80',
+    galleryImages: [
+      'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=600&q=80'
+    ],
+    address: 'Rua Borges dos Reis, 24 - Rio Vermelho',
+    neighborhood: 'Rio Vermelho',
+    coordinates: {
+      lat: -13.0125,
+      lng: -38.4895,
+      mapX: 50,
+      mapY: 75,
+    },
+    phone: '(71) 3334-1122',
+    whatsapp: '5571997771144',
+    isOpenNow: true,
+    operatingHours: [
+      { day: 'Quarta a Domingo', open: '17:00', close: '02:00' },
+    ],
+    rating: 4.9,
+    reviewCount: 78,
+    distanceKm: 2.2,
+    isFeatured: true,
+    approvalStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionPlan: {
+      name: 'Plano Lojista Salvador',
+      priceMonthly: 12.00,
+      nextBillingDate: '2026-09-20',
+      startedAt: '2025-01-15',
+    },
+    offers: [
+      {
+        id: 'off-10',
+        storeId: 'store-10',
+        title: 'Porção de Pastel de Siri + 2 Chopps por R$ 38',
+        discountBadge: 'COMBO R$ 38',
+        originalPrice: 52.0,
+        discountPrice: 38.0,
+        priceText: 'De R$ 52,00 por R$ 38,00',
+        description: 'Pastel crocante recheado de siri catado com vinagrete especial.',
+        expiresAt: '30/09/2026',
+        category: 'Bares, Botecos & Vida Noturna',
+      }
+    ],
+    reviews: []
+  },
+  {
+    id: 'store-11',
+    ownerId: 'user-merchant-11',
+    name: 'Auto Center Dunas da Pituba',
+    slug: 'auto-center-dunas-pituba',
+    category: 'Serviços Automotivos & Mecânica',
+    description: 'Centro automotivo completo: alinhamento 3D, balanceamento, troca de óleo, freios, suspensão e ar-condicionado veicular com garantia e peças originais.',
+    logo: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=200&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=900&q=80',
+    galleryImages: [
+      'https://images.unsplash.com/photo-1486006920555-c77dce18193b?auto=format&fit=crop&w=600&q=80'
+    ],
+    address: 'Av. Paulo VI, 1120 - Pituba',
+    neighborhood: 'Pituba',
+    coordinates: {
+      lat: -12.9950,
+      lng: -38.4570,
+      mapX: 64,
+      mapY: 62,
+    },
+    phone: '(71) 3358-9900',
+    whatsapp: '5571993338877',
+    isOpenNow: true,
+    operatingHours: [
+      { day: 'Segunda a Sexta', open: '08:00', close: '18:00' },
+      { day: 'Sábado', open: '08:00', close: '13:00' },
+    ],
+    rating: 4.8,
+    reviewCount: 45,
+    distanceKm: 4.9,
+    approvalStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionPlan: {
+      name: 'Plano Lojista Salvador',
+      priceMonthly: 12.00,
+      nextBillingDate: '2026-09-18',
+      startedAt: '2025-01-20',
+    },
+    offers: [
+      {
+        id: 'off-11',
+        storeId: 'store-11',
+        title: 'Higienização de Ar Condicionado + Filtro com 25% OFF',
+        discountBadge: '25% OFF',
+        originalPrice: 120.0,
+        discountPrice: 90.0,
+        priceText: 'De R$ 120,00 por R$ 90,00',
+        description: 'Elimina ácaros e odores. Essencial para o clima tropical de Salvador.',
+        expiresAt: '15/10/2026',
+        category: 'Serviços Automotivos & Mecânica',
+      }
+    ],
+    reviews: []
+  },
+  {
+    id: 'store-12',
+    ownerId: 'user-merchant-12',
+    name: 'Pet Salvador & Clínica 24h',
+    slug: 'pet-salvador-clinica-24h',
+    category: 'Pet Shop, Veterinária & Acessórios',
+    description: 'Tudo para o seu melhor amigo: consultas veterinárias, vacinas, banho & tosa com produtos hipoalergênicos, rações premium e hotelzinho climatizado.',
+    logo: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=200&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=900&q=80',
+    galleryImages: [
+      'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=600&q=80'
+    ],
+    address: 'Rua da Graça, 230 - Graça',
+    neighborhood: 'Graça',
+    coordinates: {
+      lat: -12.9980,
+      lng: -38.5220,
+      mapX: 32,
+      mapY: 72,
+    },
+    phone: '(71) 3247-4400',
+    whatsapp: '5571991225566',
+    isOpenNow: true,
+    operatingHours: [
+      { day: 'Segunda a Domingo', open: '00:00', close: '23:59' },
+    ],
+    rating: 4.9,
+    reviewCount: 52,
+    distanceKm: 1.2,
+    approvalStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionPlan: {
+      name: 'Plano Lojista Salvador',
+      priceMonthly: 12.00,
+      nextBillingDate: '2026-09-28',
+      startedAt: '2025-01-10',
+    },
+    offers: [
+      {
+        id: 'off-12',
+        storeId: 'store-12',
+        title: 'Banho Terapêutico + Tosa Higiênica com 20% OFF',
+        discountBadge: '20% OFF',
+        originalPrice: 90.0,
+        discountPrice: 72.0,
+        priceText: 'De R$ 90,00 por R$ 72,00',
+        description: 'Seu pet limpinho e cheiroso com toalhas descartáveis esterilizadas.',
+        expiresAt: '20/10/2026',
+        category: 'Pet Shop, Veterinária & Acessórios',
+      }
+    ],
+    reviews: []
+  },
+  {
+    id: 'store-13',
+    ownerId: 'user-merchant-13',
+    name: 'Casarão Bahia Decor & Móveis',
+    slug: 'casarao-bahia-decor',
+    category: 'Casa, Móveis & Decoração',
+    description: 'Design de interiores acolhedor, móveis em madeira de demolição, fibras naturais, luminárias de palha trançada, almofadas artesanais e peças decorativas baianas.',
+    logo: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=200&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=900&q=80',
+    galleryImages: [
+      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80'
+    ],
+    address: 'Alameda das Espatódeas, 580 - Caminho das Árvores',
+    neighborhood: 'Caminho das Árvores',
+    coordinates: {
+      lat: -12.9840,
+      lng: -38.4540,
+      mapX: 68,
+      mapY: 54,
+    },
+    phone: '(71) 3351-7788',
+    whatsapp: '5571994441122',
+    isOpenNow: true,
+    operatingHours: [
+      { day: 'Segunda a Sábado', open: '09:00', close: '19:00' },
+    ],
+    rating: 4.8,
+    reviewCount: 31,
+    distanceKm: 5.8,
+    approvalStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionPlan: {
+      name: 'Plano Lojista Salvador',
+      priceMonthly: 12.00,
+      nextBillingDate: '2026-09-30',
+      startedAt: '2025-01-25',
+    },
+    offers: [
+      {
+        id: 'off-13',
+        storeId: 'store-13',
+        title: 'Luminárias de Fibra Natural com 20% OFF',
+        discountBadge: '20% OFF',
+        originalPrice: 180.0,
+        discountPrice: 144.0,
+        priceText: 'De R$ 180,00 por R$ 144,00',
+        description: 'Feitas à mão por artesãos do Recôncavo Baiano.',
+        expiresAt: '25/10/2026',
+        category: 'Casa, Móveis & Decoração',
+      }
+    ],
+    reviews: []
+  },
+  {
+    id: 'store-14',
+    ownerId: 'user-merchant-14',
+    name: 'Central Elétrica & Ferragens Bonfim',
+    slug: 'central-eletrica-bonfim',
+    category: 'Construção, Elétrica & Reformas',
+    description: 'Materiais elétricos, hidráulicos, ferramentas manuais e elétricas, tintas, iluminação LED e assistência rápida para obras residenciais e comerciais.',
+    logo: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=200&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=900&q=80',
+    galleryImages: [],
+    address: 'Largo da Colina do Bonfim, 45 - Bonfim',
+    neighborhood: 'Bonfim',
+    coordinates: {
+      lat: -12.9250,
+      lng: -38.5080,
+      mapX: 42,
+      mapY: 22,
+    },
+    phone: '(71) 3312-5500',
+    whatsapp: '5571998889900',
+    isOpenNow: true,
+    operatingHours: [
+      { day: 'Segunda a Sexta', open: '07:30', close: '17:30' },
+      { day: 'Sábado', open: '07:30', close: '13:00' },
+    ],
+    rating: 4.7,
+    reviewCount: 24,
+    distanceKm: 7.5,
+    approvalStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionPlan: {
+      name: 'Plano Lojista Salvador',
+      priceMonthly: 12.00,
+      nextBillingDate: '2026-10-02',
+      startedAt: '2025-02-01',
+    },
+    offers: [
+      {
+        id: 'off-14',
+        storeId: 'store-14',
+        title: 'Kit 10 Lâmpadas LED 9W Bivolt por R$ 59,90',
+        discountBadge: 'PROMO R$ 59,90',
+        originalPrice: 89.0,
+        discountPrice: 59.9,
+        priceText: 'De R$ 89,00 por R$ 59,90',
+        description: 'Economia garantida na conta de luz com alta durabilidade.',
+        expiresAt: '30/10/2026',
+        category: 'Construção, Elétrica & Reformas',
+      }
+    ],
+    reviews: []
+  },
+  {
+    id: 'store-15',
+    ownerId: 'user-merchant-15',
+    name: 'TechBahia Celulares & Informática',
+    slug: 'techbahia-celulares-informatica',
+    category: 'Tecnologia, Celulares & Informática',
+    description: 'Conserto express de smartphones (Apple, Samsung, Xiaomi), troca de tela e bateria em 40 minutos, películas 3D, cabos homologados e notebooks seminovos.',
+    logo: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=200&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=900&q=80',
+    galleryImages: [],
+    address: 'Av. ACM, 2501 - Ed. Cidadela Center - Brotas',
+    neighborhood: 'Brotas',
+    coordinates: {
+      lat: -12.9880,
+      lng: -38.4800,
+      mapX: 54,
+      mapY: 58,
+    },
+    phone: '(71) 3353-2211',
+    whatsapp: '5571997773344',
+    isOpenNow: true,
+    operatingHours: [
+      { day: 'Segunda a Sexta', open: '08:30', close: '18:30' },
+      { day: 'Sábado', open: '08:30', close: '13:00' },
+    ],
+    rating: 4.9,
+    reviewCount: 68,
+    distanceKm: 4.1,
+    approvalStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionPlan: {
+      name: 'Plano Lojista Salvador',
+      priceMonthly: 12.00,
+      nextBillingDate: '2026-10-05',
+      startedAt: '2025-02-05',
+    },
+    offers: [
+      {
+        id: 'off-15',
+        storeId: 'store-15',
+        title: 'Troca de Bateria iPhone/Android com 25% OFF',
+        discountBadge: '25% OFF',
+        originalPrice: 160.0,
+        discountPrice: 120.0,
+        priceText: 'De R$ 160,00 por R$ 120,00',
+        description: 'Baterias homologadas com 6 meses de garantia total.',
+        expiresAt: '28/10/2026',
+        category: 'Tecnologia, Celulares & Informática',
+      }
+    ],
+    reviews: []
+  },
+  {
+    id: 'store-16',
+    ownerId: 'user-merchant-16',
+    name: 'Bahia Ecotur & Passeios de Escuna',
+    slug: 'bahia-ecotur-passeios',
+    category: 'Turismo, Passeios & Hotelaria',
+    description: 'Passeios inesquecíveis pela Baía de Todos os Santos: Ilha dos Frades, Itaparica, mergulho no Porto da Barra, city tours históricos guiados e transfers.',
+    logo: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=200&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=900&q=80',
+    galleryImages: [],
+    address: 'Terminal Náutico de Salvador - Comércio',
+    neighborhood: 'Comércio',
+    coordinates: {
+      lat: -12.9680,
+      lng: -38.5130,
+      mapX: 38,
+      mapY: 44,
+    },
+    phone: '(71) 3243-9000',
+    whatsapp: '5571996667788',
+    isOpenNow: true,
+    operatingHours: [
+      { day: 'Segunda a Domingo', open: '07:00', close: '19:00' },
+    ],
+    rating: 5.0,
+    reviewCount: 89,
+    distanceKm: 3.0,
+    approvalStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionPlan: {
+      name: 'Plano Lojista Salvador',
+      priceMonthly: 12.00,
+      nextBillingDate: '2026-09-29',
+      startedAt: '2025-01-18',
+    },
+    offers: [
+      {
+        id: 'off-16',
+        storeId: 'store-16',
+        title: 'Passeio de Escuna Ilha dos Frades com 15% OFF',
+        discountBadge: '15% OFF PIX',
+        originalPrice: 120.0,
+        discountPrice: 102.0,
+        priceText: 'De R$ 120,00 por R$ 102,00',
+        description: 'Inclui frutas tropicais a bordo e guia credenciado da Embratur.',
+        expiresAt: '30/10/2026',
+        category: 'Turismo, Passeios & Hotelaria',
+      }
+    ],
+    reviews: []
+  },
+  {
+    id: 'store-17',
+    ownerId: 'user-merchant-17',
+    name: 'Sol da Bahia Eventos & Fotografia',
+    slug: 'sol-da-bahia-eventos-fotografia',
+    category: 'Eventos, Festas & Fotografia',
+    description: 'Cobertura fotográfica de casamentos, aniversários, ensaios na praia de Salvador, aluguel de estrutura de som, iluminação cênica e buffet completo.',
+    logo: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=200&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=900&q=80',
+    galleryImages: [],
+    address: 'Rua Arthur de Azevêdo Machado, 780 - Costa Azul',
+    neighborhood: 'Costa Azul',
+    coordinates: {
+      lat: -12.9910,
+      lng: -38.4480,
+      mapX: 72,
+      mapY: 60,
+    },
+    phone: '(71) 3341-9988',
+    whatsapp: '5571995551122',
+    isOpenNow: true,
+    operatingHours: [
+      { day: 'Segunda a Sexta', open: '09:00', close: '18:00' },
+      { day: 'Sábado', open: '09:00', close: '14:00' },
+    ],
+    rating: 4.9,
+    reviewCount: 37,
+    distanceKm: 5.5,
+    approvalStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionPlan: {
+      name: 'Plano Lojista Salvador',
+      priceMonthly: 12.00,
+      nextBillingDate: '2026-10-08',
+      startedAt: '2025-02-08',
+    },
+    offers: [
+      {
+        id: 'off-17',
+        storeId: 'store-17',
+        title: 'Ensaio Fotográfico no Farol da Barra por R$ 250',
+        discountBadge: 'PROMO R$ 250',
+        originalPrice: 350.0,
+        discountPrice: 250.0,
+        priceText: 'De R$ 350,00 por R$ 250,00',
+        description: '2 horas de ensaio com 30 fotos tratadas em alta resolução.',
+        expiresAt: '30/10/2026',
+        category: 'Eventos, Festas & Fotografia',
+      }
+    ],
+    reviews: []
+  },
+  {
+    id: 'store-18',
+    ownerId: 'user-merchant-18',
+    name: 'Escola de Música & Ritmos do Pelô',
+    slug: 'musica-ritmos-pelo',
+    category: 'Educação, Idiomas & Cursos',
+    description: 'Aulas de percussão afro-baiana, violão popular, berimbau, canto e cursos livres de produção musical no centro histórico de Salvador.',
+    logo: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=200&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=900&q=80',
+    galleryImages: [],
+    address: 'Rua das Laranjeiras, 34 - Pelourinho',
+    neighborhood: 'Pelourinho / Centro Histórico',
+    coordinates: {
+      lat: -12.9720,
+      lng: -38.5090,
+      mapX: 43,
+      mapY: 49,
+    },
+    phone: '(71) 3322-6611',
+    whatsapp: '5571991238800',
+    isOpenNow: true,
+    operatingHours: [
+      { day: 'Segunda a Sábado', open: '09:00', close: '19:00' },
+    ],
+    rating: 5.0,
+    reviewCount: 41,
+    distanceKm: 3.3,
+    approvalStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionPlan: {
+      name: 'Plano Lojista Salvador',
+      priceMonthly: 12.00,
+      nextBillingDate: '2026-10-10',
+      startedAt: '2025-02-10',
+    },
+    offers: [
+      {
+        id: 'off-18',
+        storeId: 'store-18',
+        title: 'Aula Experimental Grátis de Percussão Baiana',
+        discountBadge: 'GRÁTIS 1ª AULA',
+        originalPrice: 80.0,
+        discountPrice: 0.0,
+        priceText: 'Primeira aula 100% gratuita',
+        description: 'Aprenda os ritmos do samba-reggae e axé music.',
+        expiresAt: '31/10/2026',
+        category: 'Educação, Idiomas & Cursos',
+      }
+    ],
+    reviews: []
+  },
+  {
+    id: 'store-19',
+    ownerId: 'user-merchant-19',
+    name: 'Bahia Soluções Contábeis & Jurídicas',
+    slug: 'bahia-solucoes-contabeis',
+    category: 'Serviços Profissionais & Escritórios',
+    description: 'Abertura de empresas, assessoria tributária, contabilidade para comércios locais de Salvador e consultoria empresarial completa.',
+    logo: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=200&q=80',
+    coverImage: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=900&q=80',
+    galleryImages: [],
+    address: 'Av. Estados Unidos, 50 - Ed. Cidade de Salvador - Comércio',
+    neighborhood: 'Comércio',
+    coordinates: {
+      lat: -12.9690,
+      lng: -38.5120,
+      mapX: 39,
+      mapY: 45,
+    },
+    phone: '(71) 3241-8800',
+    whatsapp: '5571998765544',
+    isOpenNow: true,
+    operatingHours: [
+      { day: 'Segunda a Sexta', open: '08:00', close: '18:00' },
+    ],
+    rating: 4.9,
+    reviewCount: 19,
+    distanceKm: 3.1,
+    approvalStatus: 'approved',
+    subscriptionStatus: 'active',
+    subscriptionPlan: {
+      name: 'Plano Lojista Salvador',
+      priceMonthly: 12.00,
+      nextBillingDate: '2026-10-12',
+      startedAt: '2025-02-12',
+    },
+    offers: [
+      {
+        id: 'off-19',
+        storeId: 'store-19',
+        title: 'Diagnóstico Tributário MEI / Simples Grátis',
+        discountBadge: 'GRÁTIS',
+        originalPrice: 200.0,
+        discountPrice: 0.0,
+        priceText: 'Avaliação gratuita para lojistas',
+        description: 'Descubra como economizar tributos de forma 100% legal.',
+        expiresAt: '31/10/2026',
+        category: 'Serviços Profissionais & Escritórios',
       }
     ],
     reviews: []
@@ -1683,77 +2215,757 @@ export const INITIAL_STORES: Store[] = [
   }
 ];
 
-export const SALVADOR_NEIGHBORHOOD_GUIDE: Record<string, {
-  tagline: string;
-  description: string;
-  vibe: string;
-  bestSpots: string[];
-  icon: string;
-  color: string;
-}> = {
+export const SALVADOR_MACRO_REGIONS = [
+  'Orla Atlântica',
+  'Centro Histórico & Cidade Antiga',
+  'Península Itapagipana & Cidade Baixa',
+  'Brotas & Região Central',
+  'Miolo & Cabula / Paralela',
+  'Cajazeiras, Águas Claras & Castelo Branco',
+  'Subúrbio Ferroviário & Ilhas',
+  'Região Norte & Aeroporto / Ipitanga'
+] as const;
+
+export type SalvadorMacroRegion = typeof SALVADOR_MACRO_REGIONS[number];
+
+export const SALVADOR_NEIGHBORHOOD_MACRO_MAP: Record<string, SalvadorMacroRegion> = {
+  // Orla Atlântica
+  'Barra': 'Orla Atlântica',
+  'Ondina': 'Orla Atlântica',
+  'Rio Vermelho': 'Orla Atlântica',
+  'Amaralina': 'Orla Atlântica',
+  'Pituba': 'Orla Atlântica',
+  'Costa Azul': 'Orla Atlântica',
+  'Jardim Armação': 'Orla Atlântica',
+  'Boca do Rio': 'Orla Atlântica',
+  'Pituaçu': 'Orla Atlântica',
+  'Patamares': 'Orla Atlântica',
+  'Piatã': 'Orla Atlântica',
+  'Itapuã': 'Orla Atlântica',
+  'Stella Maris': 'Orla Atlântica',
+  'Praia do Flamengo': 'Orla Atlântica',
+  'Alto do Coqueirinho': 'Orla Atlântica',
+  'Nordeste de Amaralina': 'Orla Atlântica',
+  'Santa Cruz': 'Orla Atlântica',
+  'Vale das Pedrinhas': 'Orla Atlântica',
+  'Chapada do Rio Vermelho': 'Orla Atlântica',
+  'Chame-Chame': 'Orla Atlântica',
+  'Calabar': 'Orla Atlântica',
+  'Alto das Pombas': 'Orla Atlântica',
+
+  // Centro Histórico & Cidade Antiga
+  'Pelourinho / Centro Histórico': 'Centro Histórico & Cidade Antiga',
+  'Centro Histórico': 'Centro Histórico & Cidade Antiga',
+  'Centro': 'Centro Histórico & Cidade Antiga',
+  'Santo Antônio Além do Carmo': 'Centro Histórico & Cidade Antiga',
+  'Barbalho': 'Centro Histórico & Cidade Antiga',
+  'Nazaré': 'Centro Histórico & Cidade Antiga',
+  'Barris': 'Centro Histórico & Cidade Antiga',
+  'Tororó': 'Centro Histórico & Cidade Antiga',
+  'Garcia': 'Centro Histórico & Cidade Antiga',
+  'Graça': 'Centro Histórico & Cidade Antiga',
+  'Vitória': 'Centro Histórico & Cidade Antiga',
+  'Canela': 'Centro Histórico & Cidade Antiga',
+  'Federação': 'Centro Histórico & Cidade Antiga',
+  'Engenho Velho da Federação': 'Centro Histórico & Cidade Antiga',
+  'Dois de Julho': 'Centro Histórico & Cidade Antiga',
+  'Saúde': 'Centro Histórico & Cidade Antiga',
+  'Lapinha': 'Centro Histórico & Cidade Antiga',
+  'Liberdade': 'Centro Histórico & Cidade Antiga',
+  'Curuzu': 'Centro Histórico & Cidade Antiga',
+  'Pero Vaz': 'Centro Histórico & Cidade Antiga',
+  'Santa Mônica': 'Centro Histórico & Cidade Antiga',
+  'IAPI': 'Centro Histórico & Cidade Antiga',
+  'Pau Miúdo': 'Centro Histórico & Cidade Antiga',
+  'Caixa D’Água': 'Centro Histórico & Cidade Antiga',
+  'Cidade Nova': 'Centro Histórico & Cidade Antiga',
+  'Macaúbas': 'Centro Histórico & Cidade Antiga',
+  'Baixa de Quintas': 'Centro Histórico & Cidade Antiga',
+
+  // Península Itapagipana & Cidade Baixa
+  'Bonfim': 'Península Itapagipana & Cidade Baixa',
+  'Ribeira': 'Península Itapagipana & Cidade Baixa',
+  'Monte Serrat': 'Península Itapagipana & Cidade Baixa',
+  'Boa Viagem': 'Península Itapagipana & Cidade Baixa',
+  'Calçada': 'Península Itapagipana & Cidade Baixa',
+  'Caminho de Areia': 'Península Itapagipana & Cidade Baixa',
+  'Mares': 'Península Itapagipana & Cidade Baixa',
+  'Massaranduba': 'Península Itapagipana & Cidade Baixa',
+  'Uruguai': 'Península Itapagipana & Cidade Baixa',
+  'Roma': 'Península Itapagipana & Cidade Baixa',
+  'Comércio': 'Península Itapagipana & Cidade Baixa',
+  'Vila Ruy Barbosa/Jardim Cruzeiro': 'Península Itapagipana & Cidade Baixa',
+  'Santa Luzia': 'Península Itapagipana & Cidade Baixa',
+
+  // Brotas & Região Central
+  'Brotas': 'Brotas & Região Central',
+  'Acupe': 'Brotas & Região Central',
+  'Acupe de Brotas': 'Brotas & Região Central',
+  'Candeal': 'Brotas & Região Central',
+  'Engenho Velho de Brotas': 'Brotas & Região Central',
+  'Boa Vista de Brotas': 'Brotas & Região Central',
+  'Matatu': 'Brotas & Região Central',
+  'Cosme de Farias': 'Brotas & Região Central',
+  'Luiz Anselmo': 'Brotas & Região Central',
+  'Vila Laura': 'Brotas & Região Central',
+  'Horto Florestal': 'Brotas & Região Central',
+  'Campinas de Brotas': 'Brotas & Região Central',
+
+  // Miolo & Cabula / Paralela
+  'Cabula': 'Miolo & Cabula / Paralela',
+  'Cabula VI': 'Miolo & Cabula / Paralela',
+  'Pernambués': 'Miolo & Cabula / Paralela',
+  'Saramandaia': 'Miolo & Cabula / Paralela',
+  'Arenoso': 'Miolo & Cabula / Paralela',
+  'Arraial do Retiro': 'Miolo & Cabula / Paralela',
+  'Beiru/Tancredo Neves': 'Miolo & Cabula / Paralela',
+  'Sussuarana': 'Miolo & Cabula / Paralela',
+  'Nova Sussuarana': 'Miolo & Cabula / Paralela',
+  'Mata Escura': 'Miolo & Cabula / Paralela',
+  'Calabetão': 'Miolo & Cabula / Paralela',
+  'Engomadeira': 'Miolo & Cabula / Paralela',
+  'Barreiras': 'Miolo & Cabula / Paralela',
+  'Bom Juá': 'Miolo & Cabula / Paralela',
+  'São Gonçalo': 'Miolo & Cabula / Paralela',
+  'Imbuí': 'Miolo & Cabula / Paralela',
+  'Narandiba': 'Miolo & Cabula / Paralela',
+  'Saboeiro': 'Miolo & Cabula / Paralela',
+  'Doron': 'Miolo & Cabula / Paralela',
+  'Centro Administrativo da Bahia (CAB)': 'Miolo & Cabula / Paralela',
+  'Canabrava': 'Miolo & Cabula / Paralela',
+  'Stiep': 'Miolo & Cabula / Paralela',
+  'Itaigara': 'Miolo & Cabula / Paralela',
+  'Caminho das Árvores': 'Miolo & Cabula / Paralela',
+  'Pau da Lima': 'Miolo & Cabula / Paralela',
+  'São Marcos': 'Miolo & Cabula / Paralela',
+  'São Rafael': 'Miolo & Cabula / Paralela',
+  'Vale dos Lagos': 'Miolo & Cabula / Paralela',
+  'Trobogy': 'Miolo & Cabula / Paralela',
+  'Novo Horizonte': 'Miolo & Cabula / Paralela',
+  'Jardim Santo Inácio': 'Miolo & Cabula / Paralela',
+  'Granjas Rurais Presidente Vargas': 'Miolo & Cabula / Paralela',
+
+  // Cajazeiras, Águas Claras & Castelo Branco
+  'Cajazeiras II': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Cajazeiras IV': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Cajazeiras V': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Cajazeiras VI': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Cajazeiras VII': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Cajazeiras VIII': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Cajazeiras X': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Cajazeiras XI': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Fazenda Grande I': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Fazenda Grande II': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Fazenda Grande III': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Fazenda Grande IV': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Jardim Cajazeiras': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Jardim Nova Esperança': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Águas Claras': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Castelo Branco': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Boca da Mata': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Jaguaripe I': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Valéria': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Palestina': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Dom Avelar': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Sete de Abril': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Vila Canária': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Nova Brasília': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Fazenda Grande do Retiro': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'São Caetano': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Boa Vista de São Caetano': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Capelinha': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Campinas de Pirajá': 'Cajazeiras, Águas Claras & Castelo Branco',
+  'Marechal Rondon': 'Cajazeiras, Águas Claras & Castelo Branco',
+
+  // Subúrbio Ferroviário & Ilhas
+  'Periperi': 'Subúrbio Ferroviário & Ilhas',
+  'Colinas de Periperi': 'Subúrbio Ferroviário & Ilhas',
+  'Mirantes de Periperi': 'Subúrbio Ferroviário & Ilhas',
+  'Plataforma': 'Subúrbio Ferroviário & Ilhas',
+  'Paripe': 'Subúrbio Ferroviário & Ilhas',
+  'Coutos': 'Subúrbio Ferroviário & Ilhas',
+  'Fazenda Coutos': 'Subúrbio Ferroviário & Ilhas',
+  'Alto da Terezinha': 'Subúrbio Ferroviário & Ilhas',
+  'Alto do Cabrito': 'Subúrbio Ferroviário & Ilhas',
+  'Lobato': 'Subúrbio Ferroviário & Ilhas',
+  'São João do Cabrito': 'Subúrbio Ferroviário & Ilhas',
+  'Escada': 'Subúrbio Ferroviário & Ilhas',
+  'Itacaranha': 'Subúrbio Ferroviário & Ilhas',
+  'Praia Grande': 'Subúrbio Ferroviário & Ilhas',
+  'Rio Sena': 'Subúrbio Ferroviário & Ilhas',
+  'Ilha Amarela': 'Subúrbio Ferroviário & Ilhas',
+  'Nova Constituinte': 'Subúrbio Ferroviário & Ilhas',
+  'Ilha dos Frades': 'Subúrbio Ferroviário & Ilhas',
+  'Ilha de Maré': 'Subúrbio Ferroviário & Ilhas',
+  'Ilha de Bom Jesus dos Passos': 'Subúrbio Ferroviário & Ilhas',
+
+  // Região Norte & Aeroporto / Ipitanga
+  'São Cristóvão': 'Região Norte & Aeroporto / Ipitanga',
+  'Aeroporto': 'Região Norte & Aeroporto / Ipitanga',
+  'Bairro da Paz': 'Região Norte & Aeroporto / Ipitanga',
+  'Mussurunga': 'Região Norte & Aeroporto / Ipitanga',
+  'Cassange': 'Região Norte & Aeroporto / Ipitanga',
+  'Nova Esperança': 'Região Norte & Aeroporto / Ipitanga',
+  'Areia Branca': 'Região Norte & Aeroporto / Ipitanga',
+  'Itinga': 'Região Norte & Aeroporto / Ipitanga',
+  'Jardim das Margaridas': 'Região Norte & Aeroporto / Ipitanga',
+  'Moradas da Lagoa': 'Região Norte & Aeroporto / Ipitanga',
+};
+
+export const SALVADOR_NEIGHBORHOOD_GUIDE: Record<string, NeighborhoodGuideInfo> = {
   'Barra': {
     tagline: 'Onde o pôr do sol encontra as águas calmas e o comércio vibrante',
     description: 'Famosa pelo Farol da Barra e pelo Porto da Barra, uma das praias urbanas mais cobiçadas do Brasil. O bairro reúne desde cafeterias descoladas e academias à beira-mar até boutiques e restaurantes com culinária baiana e internacional.',
     vibe: 'Praiano & Turístico',
-    bestSpots: ['Farol da Barra', 'Praia do Porto', 'Calçadão da Orla', 'Forte de Santa Maria'],
     icon: '🌊',
     color: '#0B4F8A',
+    macro_region: 'Orla Atlântica',
+    bannerImage: 'https://images.unsplash.com/photo-1596436889106-be35e843f974?auto=format&fit=crop&w=1200&q=80',
+    population: 15420,
+    area_km2: '1,78 km²',
+    founding_year: 1549,
+    history_text: 'A Barra foi o primeiro ponto de povoamento organizado na fundação do Brasil Colonial, onde Francisco Pereira Coutinho estabeleceu a antiga Vila do Pereira em 1536, antes mesmo da chegada oficial do primeiro Governador-Geral Tomé de Sousa em 1549. O Forte de Santo Antônio da Barra abriga o mais antigo farol do continente americano (1698), construído após o trágico naufrágio do Galeão Sacramento. Ao longo dos séculos XX e XXI, a Barra se consagrou como o grande cartão-postal cosmopolita de Salvador, centro do Carnaval pelo Circuito Barra-Ondina e um dos polos turísticos e comerciais mais cobiçados da capital baiana.',
+    coordinates: { lat: -13.0097, lng: -38.5324 },
+    bestSpots: [
+      {
+        name: 'Farol da Barra & Forte Santo Antônio',
+        photo: 'https://images.unsplash.com/photo-1596436889106-be35e843f974?auto=format&fit=crop&w=300&q=80',
+        description: 'Museu Náutico da Bahia e o mais famoso pôr do sol de Salvador.',
+        coordinates: { lat: -13.0102, lng: -38.5327 }
+      },
+      {
+        name: 'Praia do Porto da Barra',
+        photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80',
+        description: 'Águas calmas e mornas na entrada da Baía de Todos os Santos.',
+        coordinates: { lat: -13.0033, lng: -38.5325 }
+      },
+      {
+        name: 'Forte de Santa Maria',
+        photo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=300&q=80',
+        description: 'Construção militar de 1614 que abriga o Espaço Pierre Verger.',
+        coordinates: { lat: -13.0041, lng: -38.5332 }
+      },
+      {
+        name: 'Calçadão da Orla da Barra',
+        photo: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=300&q=80',
+        description: 'Piso compartilhado em mosaico português para caminhadas e lazer.',
+        coordinates: { lat: -13.0080, lng: -38.5280 }
+      }
+    ],
   },
   'Rio Vermelho': {
     tagline: 'O coração boêmio, gastronômico e cultural da capital soteropolitana',
     description: 'Berço do acarajé mais premiado de Salvador (Dinha, Regina, Cira) e da festa de Iemanjá no 2 de Fevereiro. Repleto de bistrôs, livrarias, bares de música ao vivo e ateliês criativos.',
     vibe: 'Boêmio & Gastronômico',
-    bestSpots: ['Largo de Santana (Dinha)', 'Largo da Mariquita', 'Praia do Buracão', 'Casa de Iemanjá'],
     icon: '🍤',
     color: '#E8552B',
+    macro_region: 'Orla Atlântica',
+    bannerImage: 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=1200&q=80',
+    population: 14850,
+    area_km2: '2,35 km²',
+    founding_year: 1549,
+    history_text: 'O Rio Vermelho é historicamente a colônia de pescadores que se transformou no polo artístico mais efervescente da Bahia. Lar ilustre do escritor Jorge Amado e de Zélia Gattai (cuja casa na Rua Alagoinhas hoje é memorial), o bairro é palco da secular Festa de Iemanjá em 2 de Fevereiro, atraindo milhares de devotos e turistas ao amanhecer para a entrega dos balaios de oferendas no mar. Suas praças e largos reúnem os mais aclamados tabuleiros de acarajé, restaurantes de alta gastronomia, cervejarias artesanais e casas de shows que embalam as noites da capital.',
+    coordinates: { lat: -13.0135, lng: -38.4908 },
+    bestSpots: [
+      {
+        name: 'Largo de Santana (Largo da Dinha)',
+        photo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=300&q=80',
+        description: 'Ponto de encontro icônico com o tradicional acarajé da Dinha.',
+        coordinates: { lat: -13.0142, lng: -38.4912 }
+      },
+      {
+        name: 'Casa de Iemanjá & Colônia Z-1',
+        photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80',
+        description: 'Santuário dos pescadores à beira da Praia da Paciência.',
+        coordinates: { lat: -13.0149, lng: -38.4916 }
+      },
+      {
+        name: 'Praia do Buracão',
+        photo: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=300&q=80',
+        description: 'Praia de mar azul e ambiente descontraído com beach clubs.',
+        coordinates: { lat: -13.0162, lng: -38.4842 }
+      },
+      {
+        name: 'Largo da Mariquita',
+        photo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=300&q=80',
+        description: 'Mercado do Peixe revitalizado com dezenas de bares e música ao vivo.',
+        coordinates: { lat: -13.0118, lng: -38.4880 }
+      }
+    ],
   },
   'Pelourinho / Centro Histórico': {
     tagline: 'Patrimônio Mundial da UNESCO com arte, cores coloniais e história viva',
     description: 'Ruas de paralelepípedo, casarões dos séculos XVII e XVIII, tambores do Olodum, capoeira nas praças e uma concentração ímpar de artesanato baiano, instrumentos tradicionais, fitinhas do Bonfim e galerias de arte.',
     vibe: 'Histórico & Cultural',
-    bestSpots: ['Largo do Pelourinho', 'Igreja e Convento de São Francisco', 'Casa do Olodum', 'Elevador Lacerda'],
     icon: '🏺',
     color: '#FFC72C',
+    macro_region: 'Centro Histórico & Cidade Antiga',
+    bannerImage: 'https://images.unsplash.com/photo-1582298538104-fe2e74c27f59?auto=format&fit=crop&w=1200&q=80',
+    population: 12400,
+    area_km2: '1,12 km²',
+    founding_year: 1549,
+    history_text: 'Declarado Patrimônio Mundial da Humanidade pela UNESCO em 1985, o Pelourinho é o coração da primeira capital do Brasil. Construído no topo de uma escarpa com vistas defensivas para a Baía de Todos os Santos, preserva o mais suntuoso conjunto arquitetônico civil e religioso barroco da América Latina. Palco da resistência e expressão afro-baiana através do Bloco Afro Olodum, da capoeira angola e regional, dos ateliês de xilogravura e do sincretismo da Igreja do Rosário dos Pretos, o Pelourinho é a essência viva da baianidade.',
+    coordinates: { lat: -12.9718, lng: -38.5083 },
+    bestSpots: [
+      {
+        name: 'Largo do Pelourinho',
+        photo: 'https://images.unsplash.com/photo-1582298538104-fe2e74c27f59?auto=format&fit=crop&w=300&q=80',
+        description: 'Centro do casario colonial e da Casa de Jorge Amado.',
+        coordinates: { lat: -12.9718, lng: -38.5083 }
+      },
+      {
+        name: 'Igreja e Convento de São Francisco',
+        photo: 'https://images.unsplash.com/photo-1548625361-195feee15f9b?auto=format&fit=crop&w=300&q=80',
+        description: 'A célebre "Igreja de Ouro", obra-prima do barroco brasileiro.',
+        coordinates: { lat: -12.9748, lng: -38.5098 }
+      },
+      {
+        name: 'Casa do Olodum',
+        photo: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=300&q=80',
+        description: 'Sede da percussão e da história do movimento afro-baiano.',
+        coordinates: { lat: -12.9715, lng: -38.5080 }
+      },
+      {
+        name: 'Elevador Lacerda & Praça Tomé de Souza',
+        photo: 'https://images.unsplash.com/photo-1578894381163-e72c17f2d45f?auto=format&fit=crop&w=300&q=80',
+        description: 'Primeiro elevador urbano do mundo (1873) ligando a Cidade Alta à Baixa.',
+        coordinates: { lat: -12.9734, lng: -38.5126 }
+      }
+    ],
   },
   'Pituba': {
     tagline: 'Polo comercial moderno com serviços, moda e alta gastronomia',
     description: 'Um dos bairros mais dinâmicos e populosos de Salvador, a Pituba oferece uma ampla rede de clínicas, empórios gourmet, escolas de surf, barbearias premium e centros empresariais.',
     vibe: 'Comercial & Nobre',
-    bestSpots: ['Avenida Manoel Dias', 'Parque da Cidade', 'Praça Ana Lúcia Magalhães', 'Orla da Pituba'],
     icon: '🏬',
     color: '#2E9E5B',
+    macro_region: 'Orla Atlântica',
+    bannerImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+    population: 62500,
+    area_km2: '4,80 km²',
+    founding_year: 1919,
+    history_text: 'A Pituba teve sua história transformada a partir de 1919 com o loteamento da antiga Fazenda Pituba, de propriedade do fazendeiro Joventino Pereira da Silva, que planejou a modernização urbana da capital ao longo do litoral atlântico. Hoje, a Pituba é o principal motor financeiro de comércio e serviços de Salvador, unindo a força comercial das avenidas Manoel Dias da Silva e Paulo VI ao bem-estar e lazer do Parque da Cidade e do calçadão beira-mar repleto de ciclistas e esportistas.',
+    coordinates: { lat: -13.0031, lng: -38.4594 },
+    bestSpots: [
+      {
+        name: 'Avenida Manoel Dias da Silva',
+        photo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=300&q=80',
+        description: 'O maior corredor comercial a céu aberto da Pituba.',
+        coordinates: { lat: -13.0042, lng: -38.4610 }
+      },
+      {
+        name: 'Parque da Cidade Joventino Silva',
+        photo: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=300&q=80',
+        description: 'Área verde protegida de mata atlântica, pistas de cooper e anfiteatro.',
+        coordinates: { lat: -12.9961, lng: -38.4682 }
+      },
+      {
+        name: 'Praça Ana Lúcia Magalhães',
+        photo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=300&q=80',
+        description: 'Polo gastronômico arborizado com cafés, empórios e feiras ao ar livre.',
+        coordinates: { lat: -12.9989, lng: -38.4552 }
+      },
+      {
+        name: 'Calçadão da Praia da Pituba',
+        photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80',
+        description: 'Pista de corrida, quiosques e quadras de futevôlei na orla.',
+        coordinates: { lat: -13.0090, lng: -38.4590 }
+      }
+    ],
   },
   'Itapuã': {
     tagline: 'A magia dos versos de Vinicius de Moraes e a brisa das lagoas e coqueirais',
     description: 'Eternizada na MPB, Itapuã guarda a essência da vila de pescadores com sua feira tradicional, acarajé da Cira, quiosques de frutos do mar frescos e comércio acolhedor de bairro.',
     vibe: 'Poético & Tradicional',
-    bestSpots: ['Farol de Itapuã', 'Praça Vinicius de Moraes', 'Lagoa do Abaeté', 'Praia da Sereia'],
     icon: '🥥',
     color: '#06B6D4',
+    macro_region: 'Orla Atlântica',
+    bannerImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+    population: 69200,
+    area_km2: '11,20 km²',
+    founding_year: 1853,
+    history_text: 'Eternizada na canção "Tarde em Itapuã" de Vinicius de Moraes e Toquinho e cantada por Dorival Caymmi, Itapuã preserva a essência de sua ancestralidade pesqueira e das lavadeiras do Abaeté. O Farol de Itapuã, erguido em 1873 na Ponta de Itapuã com suas listras vermelhas e brancas, guiava os navegantes na costa norte. Entre dunas de areia branca, lagoas de águas escuras e a tradicional Feira de Itapuã, o bairro é um polo vibrante de gastronomia litorânea, artesanato e vida comunitária.',
+    coordinates: { lat: -12.9348, lng: -38.3582 },
+    bestSpots: [
+      {
+        name: 'Farol de Itapuã',
+        photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80',
+        description: 'Farol icônico de 1873 junto a piscinas naturais formadas na maré baixa.',
+        coordinates: { lat: -12.9534, lng: -38.3533 }
+      },
+      {
+        name: 'Praça Vinicius de Moraes',
+        photo: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=300&q=80',
+        description: 'Monumento e estátua de bronze em homenagem ao Poeta da Bossa Nova.',
+        coordinates: { lat: -12.9515, lng: -38.3562 }
+      },
+      {
+        name: 'Parque das Dunas & Lagoa do Abaeté',
+        photo: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=300&q=80',
+        description: 'Área de preservação ambiental com dunas de areia branca e lagoa mística.',
+        coordinates: { lat: -12.9430, lng: -38.3550 }
+      },
+      {
+        name: 'Praia da Sereia & Rua da Música',
+        photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80',
+        description: 'Ponto histórico dos pescadores de Itapuã com quiosques de caranguejo.',
+        coordinates: { lat: -12.9540, lng: -38.3610 }
+      }
+    ],
   },
   'Bonfim': {
     tagline: 'Fé, tradição e a sagrada colina das fitinhas coloridas da Bahia',
     description: 'Local da secular Basílica do Senhor do Bonfim e da Ponta do Humaitá. Destino imperdível para compra de artesanato religioso, roupas de algodão cru e gastronomia ribeirinha com vista para a Baía de Todos os Santos.',
     vibe: 'Fé & Tradição',
-    bestSpots: ['Colina Sagrada do Bonfim', 'Ponta de Humaitá', 'Forte de Monte Serrat', 'Feira de São Joaquim'],
     icon: '⛪',
     color: '#8B5CF6',
+    macro_region: 'Península Itapagipana & Cidade Baixa',
+    bannerImage: 'https://images.unsplash.com/photo-1548625361-195feee15f9b?auto=format&fit=crop&w=1200&q=80',
+    population: 11900,
+    area_km2: '0,85 km²',
+    founding_year: 1745,
+    history_text: 'A Colina Sagrada do Bonfim é o maior centro de peregrinação católica e sincretismo afro-baiano do estado. Em 1745, o capitão português Theodósio Rodrigues de Faria trouxe de Setúbal a imagem do Senhor do Bonfim para a ermida que hoje é a majestosa Basílica Santuário. As famosas fitinhas do Bonfim (medidas do Bonfim) foram criadas em 1809. A anual Lavagem do Bonfim, que parte da Igreja da Conceição da Praia até o alto da colina, reúne mais de um milhão de devotos vestidos de branco em oração e celebração festiva.',
+    coordinates: { lat: -12.9238, lng: -38.5081 },
+    bestSpots: [
+      {
+        name: 'Basílica Santuário do Senhor do Bonfim',
+        photo: 'https://images.unsplash.com/photo-1548625361-195feee15f9b?auto=format&fit=crop&w=300&q=80',
+        description: 'Templo de fé com o gradil repleto de milhões de fitinhas coloridas.',
+        coordinates: { lat: -12.9238, lng: -38.5081 }
+      },
+      {
+        name: 'Ponta de Humaitá & Farolete',
+        photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80',
+        description: 'O pôr do sol mais aclamado da Península Itapagipana na Baía.',
+        coordinates: { lat: -12.9272, lng: -38.5186 }
+      },
+      {
+        name: 'Forte de Nossa Senhora de Monte Serrat',
+        photo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=300&q=80',
+        description: 'Fortaleza militar quinhentista (1583) com vista de 360° da Baía.',
+        coordinates: { lat: -12.9304, lng: -38.5190 }
+      },
+      {
+        name: 'Vila Criativa & Lojas de Artesanato',
+        photo: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=300&q=80',
+        description: 'Lojas de moda branca, artesanato sacro, doces caseiros e rendas.',
+        coordinates: { lat: -12.9210, lng: -38.5050 }
+      }
+    ],
+  },
+  'Ribeira': {
+    tagline: 'Charme bucólico à beira-mar, sorvetes tropicais e tradição náutica',
+    description: 'Bairro histórico da Cidade Baixa famoso pelas águas calmas da Enseada dos Tainheiros, polo tradicional de regatas a remo, restaurantes de moqueca e a centenária Sorveteria da Ribeira.',
+    vibe: 'Bucólico & Gastronômico',
+    icon: '🍨',
+    color: '#EC4899',
+    macro_region: 'Península Itapagipana & Cidade Baixa',
+    bannerImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+    population: 9700,
+    area_km2: '0,65 km²',
+    founding_year: 1930,
+    history_text: 'A Ribeira é um dos recantos marítimos mais acolhedores de Salvador. Antigo polo de atracação de saveiros mercantis e iates, desenvolveu forte tradição em regatas a remo e esportes náuticos na Enseada dos Tainheiros. Abriga o Solar Amado Bahia, casarão requintado de 1904 totalmente restaurado com o Museu do Sorvete, e a lendária Sorveteria da Ribeira fundada em 1931, destino obrigatório para provar sorvetes de graviola, mangaba, cajá e tapioca.',
+    coordinates: { lat: -12.9125, lng: -38.5000 },
+    bestSpots: [
+      {
+        name: 'Sorveteria da Ribeira',
+        photo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=300&q=80',
+        description: 'Fundada em 1931 com mais de 60 sabores artesanais de frutas tropicais.',
+        coordinates: { lat: -12.9130, lng: -38.4988 }
+      },
+      {
+        name: 'Solar Amado Bahia & Museu do Sorvete',
+        photo: 'https://images.unsplash.com/photo-1582298538104-fe2e74c27f59?auto=format&fit=crop&w=300&q=80',
+        description: 'Casarão de época restaurado com decoração clássica e espaço cultural.',
+        coordinates: { lat: -12.9140, lng: -38.5015 }
+      },
+      {
+        name: 'Orla da Enseada dos Tainheiros',
+        photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80',
+        description: 'Calçadão revitalizado para caminhadas ao entardecer à beira d’água.',
+        coordinates: { lat: -12.9110, lng: -38.4990 }
+      }
+    ],
+  },
+  'Liberdade': {
+    tagline: 'O coração da potência afro-baiana, moda ancestral e comércio popular',
+    description: 'Maior polo cultural negro da América Latina, berço do Bloco Afro Ilê Aiyê no Curuzu e um dos comércios populares mais dinâmicos e movimentados de Salvador.',
+    vibe: 'Ancestral & Movimentado',
+    icon: '👑',
+    color: '#D97706',
+    macro_region: 'Centro Histórico & Cidade Antiga',
+    bannerImage: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80',
+    population: 138000,
+    area_km2: '3,10 km²',
+    founding_year: 1823,
+    history_text: 'A Liberdade carrega esse nome em memória à passagem vitoriosa do Exército Libertador na Independência da Bahia em 2 de Julho de 1823 pela histórica Estrada das Boiadas. Considerado o bairro de maior densidade populacional negra fora do continente africano, é onde nasceu em 1974 o primeiro bloco afro do país, o Ilê Aiyê (no Curuzu/Senzala do Barro Preto). A Estrada da Liberdade abriga um comércio popular pulsante com confecções, calçados, tecidos africanos e culinária de rua inconfundível.',
+    coordinates: { lat: -12.9556, lng: -38.4969 },
+    bestSpots: [
+      {
+        name: 'Senzala do Barro Preto (Ilê Aiyê / Curuzu)',
+        photo: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=300&q=80',
+        description: 'Templo cultural do "Mais Belo dos Belos" e da Noite da Beleza Negra.',
+        coordinates: { lat: -12.9580, lng: -38.4920 }
+      },
+      {
+        name: 'Comércio da Estrada da Liberdade',
+        photo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=300&q=80',
+        description: 'Centenas de lojas de confecção, óticas, eletrônicos e empórios locais.',
+        coordinates: { lat: -12.9550, lng: -38.4975 }
+      },
+      {
+        name: 'Plano Inclinado Liberdade-Calçada',
+        photo: 'https://images.unsplash.com/photo-1578894381163-e72c17f2d45f?auto=format&fit=crop&w=300&q=80',
+        description: 'Bonde funicular histórico que conecta a Liberdade à Cidade Baixa.',
+        coordinates: { lat: -12.9520, lng: -38.5010 }
+      }
+    ],
+  },
+  'Santo Antônio Além do Carmo': {
+    tagline: 'Charme colonial, ateliês de arte, cafés intimistas e pôr do sol inesquecível',
+    description: 'Continuação natural do Centro Histórico, o Santo Antônio destaca-se por seus casarões preservados, galerias de artistas plásticos, restaurantes contemporâneos e mirantes para a Baía.',
+    vibe: 'Artístico & Colonial',
+    icon: '🎨',
+    color: '#7C3AED',
+    macro_region: 'Centro Histórico & Cidade Antiga',
+    bannerImage: 'https://images.unsplash.com/photo-1582298538104-fe2e74c27f59?auto=format&fit=crop&w=1200&q=80',
+    population: 6800,
+    area_km2: '0,52 km²',
+    founding_year: 1594,
+    history_text: 'O Santo Antônio Além do Carmo estende-se a partir das antigas portas norte da cidade muralhada do século XVI. Caracterizado pela preservação impecável de seus casarões coloniais coloridos em tons pastel, o bairro transformou-se no refúgio favorito de designers, fotógrafos, antiquários e chefs de cozinha. A Rua Direita de Santo Antônio e o Largo da Cruz do Pascoal concentram bares e cafés ao ar livre com vistas cinematográficas para os navios que cruzam a Baía de Todos os Santos.',
+    coordinates: { lat: -12.9645, lng: -38.5042 },
+    bestSpots: [
+      {
+        name: 'Largo da Cruz do Pascoal',
+        photo: 'https://images.unsplash.com/photo-1582298538104-fe2e74c27f59?auto=format&fit=crop&w=300&q=80',
+        description: 'Oratório barroco de 1743 e mirante com vista panorâmica para o mar.',
+        coordinates: { lat: -12.9640, lng: -38.5040 }
+      },
+      {
+        name: 'Forte de Santo Antônio Além do Carmo (Forte da Capoeira)',
+        photo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=300&q=80',
+        description: 'Fortaleza histórica e berço de grandes mestres da Capoeira Angola.',
+        coordinates: { lat: -12.9615, lng: -38.5015 }
+      },
+      {
+        name: 'Igreja da Ordem Terceira do Carmo',
+        photo: 'https://images.unsplash.com/photo-1548625361-195feee15f9b?auto=format&fit=crop&w=300&q=80',
+        description: 'Conjunto carmelita com o Convento do Carmo e arte sacra barroca.',
+        coordinates: { lat: -12.9675, lng: -38.5065 }
+      }
+    ],
   },
   'Ondina': {
     tagline: 'Campus universitário, orla arborizada e hotéis de frente para o Atlântico',
     description: 'Interligada à Barra e ao Rio Vermelho pelo circuito Dodô do Carnaval. Bairro calmo, com ótimas clínicas de estética, gastronomia contemporânea e acesso direto às piscinas naturais na maré baixa.',
     vibe: 'Residencial & Saúde',
-    bestSpots: ['Monumento das Gordinhas', 'Orla de Ondina', 'Jardim Zoológico', 'Mirante de Ondina'],
     icon: '🌴',
     color: '#10B981',
+    macro_region: 'Orla Atlântica',
+    bannerImage: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1200&q=80',
+    population: 10500,
+    area_km2: '1,42 km²',
+    founding_year: 1940,
+    history_text: 'Ondina é o elegante elo entre a Barra e o Rio Vermelho, abrigando o Campus Universitário de Ondina da UFBA, o Palácio de Ondina (sede do Governo da Bahia) e o centenário Zoológico de Salvador. Ponto final do desfile dos trios elétricos no Circuito Barra-Ondina durante o Carnaval, o bairro destaca-se durante todo o ano pela infraestrutura hoteleira de padrão internacional e suas praias de águas transparentes.',
+    coordinates: { lat: -13.0070, lng: -38.5110 },
+    bestSpots: [
+      {
+        name: 'Monumento às Meninas do Brasil (Gordinhas de Ondina)',
+        photo: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=300&q=80',
+        description: 'Esculturas de Eliana Kertész representando as matrizes étnicas da Bahia.',
+        coordinates: { lat: -13.0075, lng: -38.5115 }
+      },
+      {
+        name: 'Parque Zoobotânico de Salvador',
+        photo: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=300&q=80',
+        description: 'Reserva botânica e zoológico gratuito em meio à mata atlântica.',
+        coordinates: { lat: -13.0010, lng: -38.5120 }
+      }
+    ],
   },
   'Stella Maris': {
     tagline: 'Praias de ondas limpas, piscinas na maré baixa e clima de veraneio',
     description: 'Bairro nobre no litoral norte de Salvador, conhecido pelos esportes aquáticos, kitesurf, surf, pousadas charmosas e centros comerciais a céu aberto com foco em bem-estar e vida leve.',
     vibe: 'Surf & Veraneio',
-    bestSpots: ['Praia do Catussaba', 'Praia do Flamengo', 'Centrinho de Stella', 'Dunas do Abaeté'],
     icon: '🏄‍♂️',
     color: '#0284C7',
+    macro_region: 'Orla Atlântica',
+    bannerImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+    population: 18900,
+    area_km2: '4,10 km²',
+    founding_year: 1970,
+    history_text: 'Planejado a partir da década de 1970 no litoral norte da capital, Stella Maris conquistou fama nacional pelas suas praias com bancadas de corais que proporcionam tanto piscinas naturais protegidas quanto picos constantes de surf e kitesurf. O bairro conta com vila gastronômica a céu aberto, academias integradas à praia e pousadas charmosas que mantêm um agradável clima de veraneio o ano inteiro.',
+    coordinates: { lat: -12.9167, lng: -38.3245 },
+    bestSpots: [
+      {
+        name: 'Praia de Stella Maris (Catussaba)',
+        photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80',
+        description: 'Piscinas mornas na maré baixa e ondas para o surf na maré cheia.',
+        coordinates: { lat: -12.9180, lng: -38.3220 }
+      },
+      {
+        name: 'Praia do Flamengo',
+        photo: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=300&q=80',
+        description: 'Famosa pelas barracas de praia estruturadas com gastronomia baiana.',
+        coordinates: { lat: -12.9050, lng: -38.3100 }
+      }
+    ],
+  },
+  'Brotas': {
+    tagline: 'A cidade dentro de Salvador, repleta de comércio e tradição familiar',
+    description: 'Um dos maiores e mais populosos bairros centrais de Salvador, Brotas possui infraestrutura comercial completa com centros médicos, confeitarias, escolas e serviços variados.',
+    vibe: 'Central & Comercial',
+    icon: '🏘️',
+    color: '#4F46E5',
+    macro_region: 'Brotas & Região Central',
+    bannerImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+    population: 70100,
+    area_km2: '3,70 km²',
+    founding_year: 1718,
+    history_text: 'Criada em 1718 como a Freguesia de Nossa Senhora de Brotas, a região servia como zona de chácaras e sítios que abasteciam a cidade colonial. Ao longo do século XX, Brotas cresceu sobre colinas e vales, consolidando-se como "uma cidade dentro de Salvador" pela sua completa independência comercial, reunindo hospitais, clínicas, colégios tradicionais e comércio de proximidade.',
+    coordinates: { lat: -12.9860, lng: -38.4890 },
+    bestSpots: [
+      {
+        name: 'Igreja Matriz de Nossa Senhora de Brotas',
+        photo: 'https://images.unsplash.com/photo-1548625361-195feee15f9b?auto=format&fit=crop&w=300&q=80',
+        description: 'Templo histórico fundado no século XVIII no coração do bairro.',
+        coordinates: { lat: -12.9865, lng: -38.4885 }
+      },
+      {
+        name: 'Avenida Dom João VI',
+        photo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=300&q=80',
+        description: 'A principal artéria comercial com centenas de lojas e serviços.',
+        coordinates: { lat: -12.9850, lng: -38.4900 }
+      }
+    ],
+  },
+  'Cabula': {
+    tagline: 'Polo universitário, verde preservado e comércio dinâmico no Miolo da cidade',
+    description: 'Localização estratégica em Salvador com os campi da UNEB e Bahiana de Medicina, centro comercial ativo na Silveira Martins e ampla oferta de serviços.',
+    vibe: 'Universitário & Ativo',
+    icon: '🎓',
+    color: '#059669',
+    macro_region: 'Miolo & Cabula / Paralela',
+    bannerImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+    population: 26500,
+    area_km2: '2,15 km²',
+    founding_year: 1970,
+    history_text: 'O Cabula tem sua origem histórica ligada aos antigos laranjais e quilombos de resistência do século XIX. A partir da década de 1970, tornou-se um dos principais polos de ensino superior da Bahia com a instalação do campus central da UNEB e da Escola Bahiana de Medicina. A Avenida Silveira Martins concentra shoppings de bairro, restaurantes, confeitarias e centros de serviços essenciais.',
+    coordinates: { lat: -12.9560, lng: -38.4630 },
+    bestSpots: [
+      {
+        name: 'Avenida Silveira Martins',
+        photo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=300&q=80',
+        description: 'Eixo comercial do bairro com praças de alimentação e serviços.',
+        coordinates: { lat: -12.9565, lng: -38.4625 }
+      },
+      {
+        name: 'Campus Central da UNEB',
+        photo: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=300&q=80',
+        description: 'Universidade do Estado da Bahia com teatro e biblioteca aberta.',
+        coordinates: { lat: -12.9540, lng: -38.4650 }
+      }
+    ],
+  },
+  'Cajazeiras': {
+    tagline: 'Um dos maiores complexos comunitários do Brasil, com economia e cultura próprias',
+    description: 'Composto por diversos setores (Cajazeiras II a XI e Fazendas Grandes), conta com vida comercial pulsante, feiras populares e intensa produção cultural.',
+    vibe: 'Pulsante & Popular',
+    icon: '🏙️',
+    color: '#EA580C',
+    macro_region: 'Cajazeiras, Águas Claras & Castelo Branco',
+    bannerImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+    population: 160000,
+    area_km2: '8,50 km²',
+    founding_year: 1977,
+    history_text: 'Projetado no final dos anos 1970, o complexo de Cajazeiras foi concebido como uma cidade planejada no Miolo da capital baiana. Hoje é um centro econômico independente de Salvador, com ampla rede bancária, shoppings abertos, feiras de produtos frescos e polos de cultura e lazer comunitários.',
+    coordinates: { lat: -12.8980, lng: -38.4060 },
+    bestSpots: [
+      {
+        name: 'Rótula da Feirinha de Cajazeiras VIII',
+        photo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=300&q=80',
+        description: 'Ponto focal do comércio popular e gastronomia regional do complexo.',
+        coordinates: { lat: -12.8975, lng: -38.4055 }
+      }
+    ],
+  },
+  'Periperi': {
+    tagline: 'Polo comercial e cultural do Subúrbio Ferroviário de Salvador',
+    description: 'Bairro histórico banhado pela Baía de Todos os Santos, com a famosa Praça da Revolução, praia tranquila e o comércio mais ativo da região suburbana.',
+    vibe: 'Litorâneo & Comunitário',
+    icon: '🚂',
+    color: '#0891B2',
+    macro_region: 'Subúrbio Ferroviário & Ilhas',
+    bannerImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+    population: 48200,
+    area_km2: '3,20 km²',
+    founding_year: 1860,
+    history_text: 'Periperi desenvolveu-se a partir da construção da Estrada de Ferro da Bahia ao São Francisco no século XIX. Tornou-se o principal polo comercial e de convivência do Subúrbio Ferroviário, atraindo moradores de toda a orla interna para a Praça da Revolução e seu variado comércio popular de rua.',
+    coordinates: { lat: -12.8710, lng: -38.4790 },
+    bestSpots: [
+      {
+        name: 'Praça da Revolução',
+        photo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=300&q=80',
+        description: 'Ponto de encontro central de Periperi com quiosques e feiras.',
+        coordinates: { lat: -12.8705, lng: -38.4785 }
+      },
+      {
+        name: 'Praia de Periperi',
+        photo: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80',
+        description: 'Águas mornas e mansas da Baía de Todos os Santos.',
+        coordinates: { lat: -12.8730, lng: -38.4840 }
+      }
+    ],
+  },
+  'Comércio': {
+    tagline: 'Porto histórico, Mercado Modelo e o novo hub de inovação Doca 1',
+    description: 'Berço do comércio exterior da Bahia na base do Elevador Lacerda, o bairro une edifícios históricos como o Mercado Modelo aos modernos polos de economia criativa.',
+    vibe: 'Portuário & Financeiro',
+    icon: '🚢',
+    color: '#0284C7',
+    macro_region: 'Península Itapagipana & Cidade Baixa',
+    bannerImage: 'https://images.unsplash.com/photo-1578894381163-e72c17f2d45f?auto=format&fit=crop&w=1200&q=80',
+    population: 3100,
+    area_km2: '1,40 km²',
+    founding_year: 1549,
+    history_text: 'O bairro do Comércio nasceu junto com Salvador em 1549 como o primeiro grande porto do Brasil. Ao longo de séculos, foi o polo financeiro e alfandegário que movimentava o comércio internacional da Bahia. Abriga cartões-postais como o Mercado Modelo, a Basílica de Nossa Senhora da Conceição da Praia (1623) e o novo Hub Doca 1.',
+    coordinates: { lat: -12.9700, lng: -38.5130 },
+    bestSpots: [
+      {
+        name: 'Mercado Modelo',
+        photo: 'https://images.unsplash.com/photo-1578894381163-e72c17f2d45f?auto=format&fit=crop&w=300&q=80',
+        description: 'Maior centro de artesanato e lembranças da Bahia com subsolo histórico.',
+        coordinates: { lat: -12.9695, lng: -38.5140 }
+      },
+      {
+        name: 'Basílica de Nossa Senhora da Conceição da Praia',
+        photo: 'https://images.unsplash.com/photo-1548625361-195feee15f9b?auto=format&fit=crop&w=300&q=80',
+        description: 'Igreja histórica pré-fabricada em pedra de lioz trazida de Portugal.',
+        coordinates: { lat: -12.9735, lng: -38.5135 }
+      }
+    ],
+  },
+  'Imbuí': {
+    tagline: 'Vida residencial prática, feirinhas noturnas e quiosques da Av. Jorge Amado',
+    description: 'Bairro nobre e central com ampla oferta de academias, bistrôs, farmácias 24h e um calçadão central vibrante para passeios com a família e pets.',
+    vibe: 'Moderno & Convivência',
+    icon: '🌳',
+    color: '#16A34A',
+    macro_region: 'Miolo & Cabula / Paralela',
+    bannerImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+    population: 32000,
+    area_km2: '1,80 km²',
+    founding_year: 1980,
+    history_text: 'Criado no início da década de 1980 ao longo da recém-inaugurada Avenida Jorge Amado, o Imbuí rapidamente tornou-se um dos bairros residenciais mais valorizados e bem equipados de Salvador. O canteiro central arborizado da Av. Jorge Amado transformou-se no grande ponto de encontro de moradores com quiosques de comida baiana, sorveterias e feiras de artesanato.',
+    coordinates: { lat: -12.9740, lng: -38.4350 },
+    bestSpots: [
+      {
+        name: 'Canteiro Central da Av. Jorge Amado',
+        photo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=300&q=80',
+        description: 'Quiosques de gastronomia, ciclovia e feirinhas artesanais noturnas.',
+        coordinates: { lat: -12.9745, lng: -38.4345 }
+      }
+    ],
   },
 };
 

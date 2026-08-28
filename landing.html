@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SALVÓ • O 1º App Social de Comercialização do Brasil | Salvador, Bahia</title>
+  <meta name="description" content="Revolucione o comércio local. Salvador lidera a nova era do comércio social. Conecte-se a lojas, ofertas e pessoas de Salvador na palma da sua mão.">
+  
+  <!-- Favicon & PWA -->
+  <link rel="icon" type="image/png" href="/salvo-logo.png">
+
+  <!-- Google Fonts: Poppins & Playfair Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,900&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================================
+       RESET & ROOT VARIABLES
+    ========================================================= */
+    :root {
+      --color-turquoise: #00B4D8;
+      --color-turquoise-dark: #0077B6;
+      --color-yellow: #FFD60A;
+      --color-orange: #FF9100;
+      --color-navy: #0B3D91;
+      --color-navy-dark: #072559;
+      --font-brand: 'Playfair Display', Georgia, serif;
+      --font-body: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-family: var(--font-body);
+      color: #FFFFFF;
+      background-color: #05162E;
+    }
+
+    /* =========================================================
+       FULLSCREEN VIDEO BACKGROUND & OVERLAY
+    ========================================================= */
+    .video-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      z-index: 1;
+      background-color: #05162E;
+      pointer-events: none;
+    }
+
+    /* Video styling with smooth iframe fill */
+    .video-container iframe {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 177.78vh;
+      min-width: 100vw;
+      height: 56.25vw;
+      min-height: 100vh;
+      transform: translate(-50%, -50%) scale(1.05);
+      border: 0;
+      opacity: 0.82;
+      pointer-events: none;
+    }
+
+    /* Fallback image (if video does not load or on data-saver mode) */
+    .video-fallback-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      opacity: 0.9;
+    }
+
+    /* Gradient overlay for contrast and modern aesthetic */
+    .video-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(7, 37, 89, 0.65) 0%, rgba(5, 22, 46, 0.9) 100%),
+                  linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 180, 216, 0.3) 100%);
+      z-index: 2;
+      backdrop-filter: blur(1.5px);
+    }
+
+    /* Authentic Bahia Bonfim ribbon accent line at the top */
+    .bonfim-ribbon {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      display: flex;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    .bonfim-ribbon span {
+      flex: 1;
+      height: 100%;
+    }
+    .ribbon-green  { background-color: #009B3A; }
+    .ribbon-yellow { background-color: #FFDF00; }
+    .ribbon-blue   { background-color: #002776; }
+    .ribbon-white  { background-color: #FFFFFF; }
+    .ribbon-red    { background-color: #E63946; }
+
+    /* =========================================================
+       MAIN HERO WRAPPER (CENTERED VERTICAL & HORIZONTAL)
+    ========================================================= */
+    .hero-wrapper {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 40px 20px 24px 20px;
+      text-align: center;
+    }
+
+    /* Top Navigation bar / Badge */
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--color-yellow);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      animation: fadeInDown 0.8s ease backwards 0.1s;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--color-yellow);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--color-yellow);
+      animation: blink 1.5s infinite;
+    }
+
+    /* Central Content Box */
+    .hero-center {
+      max-width: 880px;
+      width: 100%;
+      margin: auto 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* App Name "SALVÓ" */
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      animation: fadeInUp 0.8s ease backwards 0.2s;
+    }
+
+    .brand-name {
+      font-family: var(--font-brand);
+      font-weight: 900;
+      font-style: italic;
+      font-size: clamp(2.6rem, 7vw, 4.2rem);
+      letter-spacing: -1px;
+      color: #FFFFFF;
+      text-shadow: 0 0 25px rgba(0, 180, 216, 0.7), 0 4px 15px rgba(0, 0, 0, 0.8);
+      position: relative;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, var(--color-yellow), var(--color-orange));
+      color: #072559;
+      font-family: var(--font-body);
+      font-style: normal;
+      font-size: 0.72rem;
+      font-weight: 900;
+      padding: 4px 10px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(255, 214, 10, 0.4);
+      transform: translateY(-8px);
+    }
+
+    /* Main Title */
+    .main-title {
+      font-size: clamp(1.8rem, 5vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+      margin-bottom: 18px;
+      text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+      animation: fadeInUp 0.8s ease backwards 0.3s;
+    }
+
+    .title-line-1 {
+      display: block;
+      color: #FFFFFF;
+      min-height: 1.2em; /* Prevents layout jump during typewriter */
+    }
+
+    .typewriter-cursor {
+      display: inline-block;
+      width: 3px;
+      height: 0.9em;
+      background-color: var(--color-yellow);
+      margin-left: 4px;
+      vertical-align: middle;
+      animation: blink 0.8s infinite;
+    }
+
+    .title-line-2 {
+      display: block;
+      margin-top: 6px;
+      background: linear-gradient(90deg, #00B4D8 0%, #48CAE4 35%, #FFD60A 85%, #FF9100 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: clamp(1.4rem, 4.2vw, 2.6rem);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .title-line-2.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Subtitle Description */
+    .hero-subtitle {
+      font-size: clamp(0.95rem, 2.2vw, 1.25rem);
+      font-weight: 400;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.95);
+      max-width: 680px;
+      margin: 0 auto 30px auto;
+      text-shadow: 0 2px 15px rgba(0, 0, 0, 0.6);
+      animation: fadeInUp 0.8s ease backwards 0.5s;
+    }
+
+    /* Glassmorphism Feature Cards */
+    .glass-cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: 100%;
+      max-width: 720px;
+      margin-bottom: 34px;
+      animation: fadeInUp 0.8s ease backwards 0.6s;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 18px;
+      padding: 18px;
+      text-align: left;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, border-color 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .glass-card:hover {
+      transform: translateY(-4px);
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(0, 180, 216, 0.4);
+    }
+
+    .glass-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .card-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .card-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: -0.2px;
+    }
+
+    .card-desc {
+      font-size: 0.84rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.45;
+    }
+
+    .highlight-badge {
+      background: var(--color-yellow);
+      color: #072559;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .highlight-price {
+      color: var(--color-yellow);
+      font-weight: 800;
+    }
+
+    /* CTA Button (Turquoise to Yellow gradient with infinite pulse) */
+    .cta-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      animation: fadeInUp 0.8s ease backwards 0.8s;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #00B4D8 0%, #0077B6 40%, #FFD60A 90%, #FF9100 100%);
+      background-size: 200% auto;
+      color: #FFFFFF;
+      text-decoration: none;
+      font-family: var(--font-body);
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 18px 38px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      cursor: pointer;
+      box-shadow: 0 10px 35px rgba(0, 180, 216, 0.45), 0 0 20px rgba(255, 214, 10, 0.3);
+      transition: all 0.3s ease;
+      animation: pulseBtn 2.2s infinite ease-in-out;
+    }
+
+    .cta-btn:hover {
+      background-position: right center;
+      transform: scale(1.06);
+      box-shadow: 0 14px 45px rgba(0, 180, 216, 0.65), 0 0 30px rgba(255, 214, 10, 0.5);
+      color: #FFFFFF;
+    }
+
+    .cta-btn:active {
+      transform: scale(0.98);
+    }
+
+    .cta-arrow {
+      font-size: 1.3rem;
+      transition: transform 0.3s ease;
+    }
+
+    .cta-btn:hover .cta-arrow {
+      transform: translateX(6px);
+    }
+
+    .cta-hint {
+      font-size: 0.78rem;
+      color: rgba(255, 255, 255, 0.75);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    /* Footer & Scroll Indicator */
+    .hero-footer {
+      width: 100%;
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      animation: fadeIn 1s ease backwards 1s;
+    }
+
+    .scroll-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.7);
+      transition: color 0.2s ease;
+    }
+
+    .scroll-indicator:hover {
+      color: var(--color-yellow);
+    }
+
+    .scroll-indicator-text {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 600;
+    }
+
+    .scroll-arrow {
+      width: 20px;
+      height: 20px;
+      animation: floatArrow 1.8s infinite ease-in-out;
+    }
+
+    .footer-credits {
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.55);
+      font-weight: 500;
+    }
+
+    /* =========================================================
+       KEYFRAME ANIMATIONS
+    ========================================================= */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes pulseBtn {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 8px 30px rgba(0, 180, 216, 0.4), 0 0 15px rgba(255, 214, 10, 0.2);
+      }
+      50% {
+        transform: scale(1.04);
+        box-shadow: 0 12px 40px rgba(0, 180, 216, 0.6), 0 0 25px rgba(255, 214, 10, 0.4);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 8px 30px rgba(0, 180, 216, 0.4), 0 0 15px rgba(255, 214, 10, 0.2);
+      }
+    }
+
+    @keyframes floatArrow {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(6px);
+      }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* =========================================================
+       RESPONSIVE DESIGN (MOBILE-FIRST BREAKPOINTS)
+    ========================================================= */
+    @media (max-width: 640px) {
+      .hero-wrapper {
+        padding: 30px 16px 20px 16px;
+      }
+      .glass-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .glass-card {
+        padding: 14px 16px;
+      }
+      .cta-btn {
+        width: 100%;
+        padding: 16px 24px;
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Authentic 5-Color Bonfim Ribbon at Top Edge -->
+  <div class="bonfim-ribbon">
+    <span class="ribbon-green"></span>
+    <span class="ribbon-yellow"></span>
+    <span class="ribbon-blue"></span>
+    <span class="ribbon-white"></span>
+    <span class="ribbon-red"></span>
+  </div>
+
+  <!-- FULLSCREEN VIDEO BACKGROUND -->
+  <div class="video-container">
+    <!-- YouTube Background Video: https://youtu.be/4A_EsZm-W3Y -->
+    <iframe 
+      src="https://www.youtube-nocookie.com/embed/4A_EsZm-W3Y?autoplay=1&mute=1&loop=1&playlist=4A_EsZm-W3Y&controls=0&showinfo=0&rel=0&iv_load_policy=3&disablekb=1&modestbranding=1&playsinline=1&enablejsapi=1" 
+      title="Salvador Vídeo de Fundo HD" 
+      allow="autoplay; encrypted-media">
+    </iframe>
+    
+    <!-- Static Fallback Image Layer -->
+    <img src="https://images.unsplash.com/photo-1590523277543-a94d2e4eb00b?auto=format&fit=crop&w=1600&q=80" class="video-fallback-img" alt="Salvador Bahia - Farol da Barra">
+
+    <!-- Gradient Darkness & Color Overlay -->
+    <div class="video-overlay"></div>
+  </div>
+
+  <!-- MAIN HERO WRAPPER -->
+  <main class="hero-wrapper">
+    
+    <!-- Top Innovation Badge -->
+    <div class="header-badge">
+      <span class="pulse-dot"></span>
+      <span>O 1º APP SOCIAL DE COMÉRCIO DO BRASIL</span>
+    </div>
+
+    <!-- Centered Pitch & Value Proposition -->
+    <div class="hero-center">
+      
+      <!-- Brand Identity -->
+      <div class="app-brand">
+        <h1 class="brand-name">SALVÓ</h1>
+        <span class="brand-badge">SSA • BAHIA</span>
+      </div>
+
+      <!-- Main Dynamic Title -->
+      <h2 class="main-title">
+        <span class="title-line-1" id="typewriterText"></span>
+        <span class="title-line-2" id="titleLine2">O 1º APP SOCIAL DO BRASIL.</span>
+      </h2>
+
+      <!-- Subtitle Description -->
+      <p class="hero-subtitle">
+        Salvador lidera a nova era do comércio social. Conecte-se a lojas, ofertas e pessoas, tudo na palma da sua mão.
+      </p>
+
+      <!-- Glassmorphic Value Props -->
+      <div class="glass-cards-grid">
+        <!-- Card 1: Morador & Turista -->
+        <div class="glass-card">
+          <div class="glass-card-header">
+            <div class="card-icon">🏖️</div>
+            <h3 class="card-title">Morador & Turista</h3>
+          </div>
+          <p class="card-desc">
+            <span class="highlight-badge">100% Grátis</span> para explorar bairros, conversar no chat e aproveitar cupons sem intermediários.
+          </p>
+        </div>
+
+        <!-- Card 2: Para Lojistas -->
+        <div class="glass-card">
+          <div class="glass-card-header">
+            <div class="card-icon">🏪</div>
+            <h3 class="card-title">Para Lojistas</h3>
+          </div>
+          <p class="card-desc">
+            Vitrine oficial de Salvador por apenas <span class="highlight-price">R$ 12/mês</span>. Receba no Pix direto com 0% de comissão.
+          </p>
+        </div>
+      </div>
+
+      <!-- Call to Action Button -->
+      <div class="cta-container">
+        <a href="/" id="ctaExploreBtn" class="cta-btn" onclick="handleExploreClick(event)">
+          <span>EXPLORAR SALVADOR AGORA</span>
+          <span class="cta-arrow">→</span>
+        </a>
+        <p class="cta-hint">Sem cadastro obrigatório para navegar • 100% Seguro & Baiano</p>
+      </div>
+
+    </div>
+
+    <!-- Footer & Scroll Down Arrow -->
+    <footer class="hero-footer">
+      <div class="scroll-indicator" onclick="handleExploreClick(event)">
+        <span class="scroll-indicator-text">Entrar no Guia</span>
+        <svg class="scroll-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+      <p class="footer-credits">SALVÓ SSA • Desenvolvido com axé para impulsionar o comércio de Salvador</p>
+    </footer>
+
+  </main>
+
+  <!-- =========================================================
+       JAVASCRIPT: TYPEWRITER, VIDEO FADE-IN & NAVIGATION
+  ========================================================= -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. VIDEO FADE-IN WHEN LOADED
+      const video = document.getElementById('bgVideo');
+      if (video) {
+        if (video.readyState >= 3) {
+          video.classList.add('loaded');
+        } else {
+          video.addEventListener('canplay', () => {
+            video.classList.add('loaded');
+          });
+          video.addEventListener('playing', () => {
+            video.classList.add('loaded');
+          });
+        }
+      }
+
+      // 2. TYPEWRITER EFFECT FOR TITLE LINE 1
+      const textToType = "REVOLUCIONE O COMÉRCIO LOCAL.";
+      const typewriterElement = document.getElementById('typewriterText');
+      const titleLine2 = document.getElementById('titleLine2');
+      
+      let charIndex = 0;
+      const typeSpeed = 55; // ms per character
+
+      function typeWriter() {
+        if (charIndex < textToType.length) {
+          typewriterElement.innerHTML = textToType.substring(0, charIndex + 1) + '<span class="typewriter-cursor"></span>';
+          charIndex++;
+          setTimeout(typeWriter, typeSpeed);
+        } else {
+          // Remove cursor after finished typing and reveal line 2
+          typewriterElement.innerHTML = textToType;
+          setTimeout(() => {
+            if (titleLine2) {
+              titleLine2.classList.add('visible');
+            }
+          }, 250);
+        }
+      }
+
+      // Start typewriter after a short entrance delay
+      setTimeout(typeWriter, 500);
+    });
+
+    // 3. CTA BUTTON HANDLER
+    function handleExploreClick(e) {
+      e.preventDefault();
+      // INTEGRAÇÃO COM O APLICATIVO REAL:
+      // Redireciona para o aplicativo principal SPA
+      window.location.href = '/';
+    }
+  </script>
+
+</body>
+</html>

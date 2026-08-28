@@ -1,12 +1,18 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
-import { Store, StoreCategory } from '../types';
+import { Store, StoreCategory, TheftIncident, RouteDestinationTarget } from '../types';
 import { STORE_CATEGORIES, NEIGHBORHOOD_SALES_EXAMPLES, SALVADOR_NEIGHBORHOODS, NeighborhoodSaleExample } from '../data/mockData';
+import { THEFT_TYPE_LABELS } from '../data/mockSafetyData';
+import { isValidPublicStore } from '../utils/storeValidation';
+import { fetchRealSalvadorRoute } from '../utils/salvadorRoutingService';
 import {
   getSalvadorNeighborhoodLocation,
   SALVADOR_NEIGHBORHOOD_GEO_MAP,
 } from '../utils/salvadorGeoDatabase';
 import { ClearableInput } from './ClearableInput';
+import { StoreCard } from './StoreCard';
+import { RouteCalculatorPanel } from './RouteCalculatorPanel';
+import { SafetyIncidentModal } from './SafetyIncidentModal';
 import {
   MapPin,
   Navigation,
@@ -29,8 +35,11 @@ import {
   Check,
   Building,
   ExternalLink,
+  Flame,
+  ShieldAlert,
+  AlertTriangle,
+  Plus,
 } from 'lucide-react';
-
 
 interface InteractiveMapProps {
   stores: Store[];
@@ -41,7 +50,14 @@ interface InteractiveMapProps {
   userLocation: { lat: number; lng: number } | null;
   onUseLocation: () => void;
   isLocating: boolean;
+  favoriteStoreIds?: string[];
+  onToggleFavorite?: (storeId: string) => void;
+  theftIncidents?: TheftIncident[];
+  onSubmitTheftIncident?: (newIncident: Omit<TheftIncident, 'id' | 'createdAt' | 'status' | 'verifiedByAdmin'>) => void;
+  targetNeighborhood?: string;
+  targetCoordinates?: { lat: number; lng: number };
 }
+
 
 function formatBrazilianDate(dateStr?: string): string {
   if (!dateStr) return '';
@@ -159,36 +175,49 @@ const SALVADOR_LANDMARKS: Landmark[] = [
 
 const MAP_LAYERS = [
   {
-    id: 'voyager',
-    name: 'Moderno (CartoDB)',
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>, OpenStreetMap',
+    id: 'osm_classic',
+    name: '🗺️ Ruas, Avenidas & Bairros (OpenStreetMap)',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '',
+    subdomains: 'abc',
+    maxZoom: 19,
+    className: 'salvo-map-classic-tiles',
+  },
+  {
+    id: 'osm_clean',
+    name: '🎨 Salvador Moderno (CartoDB Clean)',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+    attribution: '',
     subdomains: 'abcd',
     maxZoom: 20,
+    className: 'salvo-map-clean-tiles',
+  },
+  {
+    id: 'esri_street',
+    name: '🧭 Ruas Detalhadas & Relevo (Esri)',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: '',
+    subdomains: '',
+    maxZoom: 19,
+    className: 'salvo-map-esri-tiles',
+  },
+  {
+    id: 'osm_hot',
+    name: '☀️ Salvador Vibrante (Cores Vivas)',
+    url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    attribution: '',
+    subdomains: 'abc',
+    maxZoom: 19,
+    className: 'salvo-map-hot-tiles',
   },
   {
     id: 'satellite',
-    name: 'Satélite Real (Esri)',
+    name: '🛰️ Satélite em Alta Resolução (Esri)',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye',
+    attribution: '',
     subdomains: '',
     maxZoom: 18,
-  },
-  {
-    id: 'osm',
-    name: 'OpenStreetMap Ruas',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors',
-    subdomains: 'abc',
-    maxZoom: 19,
-  },
-  {
-    id: 'dark',
-    name: 'Modo Noturno (Dark)',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>, OpenStreetMap',
-    subdomains: 'abcd',
-    maxZoom: 20,
+    className: 'salvo-map-satellite-tiles',
   },
 ];
 
@@ -214,6 +243,12 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   userLocation,
   onUseLocation,
   isLocating,
+  favoriteStoreIds = [],
+  onToggleFavorite,
+  theftIncidents = [],
+  onSubmitTheftIncident,
+  targetNeighborhood,
+  targetCoordinates,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -221,22 +256,40 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const storeMarkersGroupRef = useRef<L.FeatureGroup | null>(null);
   const landmarksGroupRef = useRef<L.FeatureGroup | null>(null);
   const salesGroupRef = useRef<L.FeatureGroup | null>(null);
+  const theftMarkersGroupRef = useRef<L.FeatureGroup | null>(null);
   const userMarkerRef = useRef<L.LayerGroup | null>(null);
   const routeLineRef = useRef<L.Polyline | null>(null);
 
   const [mapZoom, setMapZoom] = useState<number>(13);
-  const [activePinStore, setActivePinStore] = useState<Store | null>(stores[0] || null);
+  // Valid public stores only
+  const validStores = useMemo(() => stores.filter(isValidPublicStore), [stores]);
+  const [activePinStore, setActivePinStore] = useState<Store | null>(null);
   const [activeSaleExample, setActiveSaleExample] = useState<NeighborhoodSaleExample | null>(null);
   const [activeMapFilter, setActiveMapFilter] = useState<'all' | 'offers_only' | 'open_only' | 'sales_examples'>('all');
-  const [currentLayerId, setCurrentLayerId] = useState<string>('voyager');
+  const [currentLayerId, setCurrentLayerId] = useState<string>('osm_classic');
   const [showLandmarks, setShowLandmarks] = useState<boolean>(true);
   const [showSalesExamples, setShowSalesExamples] = useState<boolean>(true);
+  const [showTheftLayer, setShowTheftLayer] = useState<boolean>(true);
   const [showLayersMenu, setShowLayersMenu] = useState<boolean>(false);
   const [showNeighborhoodSearch, setShowNeighborhoodSearch] = useState<boolean>(false);
   const [neighborhoodSearchQuery, setNeighborhoodSearchQuery] = useState<string>('');
   const [showRouteLine, setShowRouteLine] = useState<boolean>(true);
   const [activeLandmark, setActiveLandmark] = useState<Landmark | null>(null);
-  const [showExploreAreaBtn, setShowExploreAreaBtn] = useState<boolean>(false);
+
+  // Theft Incidents & Safety States
+  const [activeTheftIncident, setActiveTheftIncident] = useState<TheftIncident | null>(null);
+  const [showTheftModal, setShowTheftModal] = useState<boolean>(false);
+  const [theftModalMode, setTheftModalMode] = useState<'view' | 'create'>('view');
+
+  // Route Calculator States
+  const [activeRouteDestination, setActiveRouteDestination] = useState<RouteDestinationTarget | null>(null);
+  const [showRouteCalculator, setShowRouteCalculator] = useState<boolean>(false);
+
+  // Approved theft incidents for public map display
+  const approvedTheftIncidents = useMemo(() => {
+    return theftIncidents.filter((inc) => inc.status === 'approved');
+  }, [theftIncidents]);
+
 
   // Filtered neighborhood list for quick search
   const filteredNeighborhoods = useMemo(() => {
@@ -247,24 +300,25 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     return SALVADOR_NEIGHBORHOODS.filter((n) => n.toLowerCase().includes(q));
   }, [neighborhoodSearchQuery]);
 
-  // Filtered stores
-  const filteredStores = stores.filter((store) => {
-    if (selectedCategory !== 'Todas' && store.category !== selectedCategory) {
-      return false;
-    }
-    if (activeMapFilter === 'offers_only' && (!store.offers || store.offers.length === 0)) {
-      return false;
-    }
-    if (activeMapFilter === 'open_only' && !store.isOpenNow) {
-      return false;
-    }
-    return true;
-  });
-
+  // Filtered valid stores
+  const filteredStores = useMemo(() => {
+    return validStores.filter((store) => {
+      if (selectedCategory !== 'Todas' && store.category !== selectedCategory) {
+        return false;
+      }
+      if (activeMapFilter === 'offers_only' && (!store.offers || store.offers.length === 0)) {
+        return false;
+      }
+      if (activeMapFilter === 'open_only' && !store.isOpenNow) {
+        return false;
+      }
+      return true;
+    });
+  }, [validStores, selectedCategory, activeMapFilter]);
 
   const getCategoryColor = (category: StoreCategory) => {
     const found = STORE_CATEGORIES.find((c) => c.name === category);
-    return found ? found.color : '#0B4F8A';
+    return found ? found.color : '#0B3D91';
   };
 
   const getCategoryIcon = (category: StoreCategory) => {
@@ -285,8 +339,11 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       attributionControl: false,
     });
 
-    // Add Attribution in bottom right with custom styling
-    L.control.attribution({ position: 'bottomright', prefix: 'SALVÔ' }).addTo(map);
+    // Add Attribution in bottom right with high-contrast custom styling
+    L.control.attribution({
+      position: 'bottomright',
+      prefix: '<strong style="color:#0B3D91;">SALVÔ</strong>',
+    }).addTo(map);
 
     // Initial Base Tile Layer
     const layerConfig = MAP_LAYERS.find((l) => l.id === currentLayerId) || MAP_LAYERS[0];
@@ -302,13 +359,16 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     const storeMarkersGroup = L.featureGroup().addTo(map);
     const landmarksGroup = L.featureGroup().addTo(map);
     const salesGroup = L.featureGroup().addTo(map);
+    const theftMarkersGroup = L.featureGroup().addTo(map);
     const userMarkerGroup = L.layerGroup().addTo(map);
 
     storeMarkersGroupRef.current = storeMarkersGroup;
     landmarksGroupRef.current = landmarksGroup;
     salesGroupRef.current = salesGroup;
+    theftMarkersGroupRef.current = theftMarkersGroup;
     userMarkerRef.current = userMarkerGroup;
     mapInstanceRef.current = map;
+
 
     // Listen to zoom changes for intelligent clustering
     map.on('zoomend', () => {
@@ -356,7 +416,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     tileLayerRef.current = newTileLayer;
   }, [currentLayerId]);
 
-  // Render Landmarks
+  // Render Landmarks (Point of Interest) with Hover Tooltip Only to prevent label overlapping
   useEffect(() => {
     const map = mapInstanceRef.current;
     const landmarksGroup = landmarksGroupRef.current;
@@ -370,23 +430,37 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       const landmarkIcon = L.divIcon({
         className: 'custom-landmark-pin',
         html: `
-          <div class="group relative cursor-pointer transform hover:scale-110 transition-transform">
-            <div class="flex items-center gap-1 px-2 py-1 bg-white/95 backdrop-blur-md rounded-full shadow-md border border-slate-200 text-[11px] font-bold text-slate-800 hover:border-[#0B4F8A]">
-              <span>${lm.icon}</span>
-              <span class="max-w-[120px] truncate hidden sm:inline">${lm.name}</span>
-            </div>
-            <div class="w-2 h-2 bg-[#0B4F8A] rotate-45 mx-auto -mt-1 shadow-xs"></div>
+          <div class="cursor-pointer transform hover:scale-115 active:scale-95 transition-transform flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-md border-2 border-[#0B3D91]"
+               title="${lm.name}"
+               role="button"
+               tabindex="0">
+            <span class="text-sm leading-none">${lm.icon}</span>
           </div>
         `,
-        iconSize: [120, 32],
-        iconAnchor: [60, 28],
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
       });
 
       const marker = L.marker([lm.lat, lm.lng], { icon: landmarkIcon });
+
+      // Label only visible on HOVER or click to eliminate visual clutter between nearby spots (e.g. Elevador Lacerda & Pelourinho)
+      marker.bindTooltip(`
+        <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5 py-0.5">
+          <span>${lm.icon}</span>
+          <span>${lm.name}</span>
+        </div>
+      `, {
+        direction: 'top',
+        offset: [0, -16],
+        opacity: 0.95,
+        className: 'salvo-landmark-tooltip',
+      });
+
       marker.on('click', () => {
         setActiveLandmark(lm);
         setActivePinStore(null);
-        map.flyTo([lm.lat, lm.lng], Math.max(map.getZoom(), 15), { duration: 1 });
+        setActiveSaleExample(null);
+        map.flyTo([lm.lat, lm.lng], Math.max(map.getZoom(), 15), { duration: 0.8 });
       });
 
       landmarksGroup.addLayer(marker);
@@ -410,9 +484,10 @@ function computeStoreClusters(
   storesList: Store[],
   zoom: number
 ): StoreClusterItem[] {
-  // 1. Safe coordinate filtering
-  const validStores = storesList.filter(
+  // Safe coordinate filtering + valid public stores
+  const valid = storesList.filter(
     (s) =>
+      isValidPublicStore(s) &&
       s.coordinates &&
       typeof s.coordinates.lat === 'number' &&
       typeof s.coordinates.lng === 'number' &&
@@ -420,17 +495,18 @@ function computeStoreClusters(
       !isNaN(s.coordinates.lng)
   );
 
-  if (validStores.length === 0) return [];
+  if (valid.length === 0) return [];
 
-  // Determine cluster pixel radius by zoom level
-  let radiusPx = 65;
-  if (zoom <= 11) radiusPx = 95;
-  else if (zoom === 12) radiusPx = 80;
-  else if (zoom === 13) radiusPx = 65;
-  else if (zoom === 14) radiusPx = 48;
-  else if (zoom === 15) radiusPx = 32;
-  else if (zoom === 16) radiusPx = 20;
-  else radiusPx = 10; // zoom 17+
+  // Determine cluster pixel radius by zoom level:
+  // When two or more pins are within radiusPx distance on screen, group them into a single numbered cluster
+  let radiusPx = 55;
+  if (zoom <= 11) radiusPx = 80;
+  else if (zoom === 12) radiusPx = 70;
+  else if (zoom === 13) radiusPx = 60;
+  else if (zoom === 14) radiusPx = 50;
+  else if (zoom === 15) radiusPx = 40;
+  else if (zoom === 16) radiusPx = 30;
+  else radiusPx = 22; // zoom 17+
 
   interface ClusterAcc {
     id: string;
@@ -447,7 +523,7 @@ function computeStoreClusters(
 
   const clustersAcc: ClusterAcc[] = [];
 
-  for (const store of validStores) {
+  for (const store of valid) {
     const pt = map.project([store.coordinates.lat, store.coordinates.lng], zoom);
 
     let closestCluster: ClusterAcc | null = null;
@@ -526,7 +602,7 @@ function computeStoreClusters(
 
     clusters.forEach((cluster) => {
       if (cluster.isCluster) {
-        // Render Cluster Marker
+        // Render Cluster Marker with numeric badge that expands on click
         const storesCount = cluster.stores.length;
         const offersCount = cluster.offersCount;
         const hasOffers = offersCount > 0;
@@ -537,28 +613,26 @@ function computeStoreClusters(
             <div class="cursor-pointer select-none group flex items-center justify-center filter drop-shadow-md hover:scale-105 active:scale-95 transition-transform"
                  role="button"
                  tabindex="0"
-                 aria-label="${storesCount} lojas agrupadas${hasOffers ? `, ${offersCount} com ofertas ativas` : ''}. Clique para aproximar no mapa.">
-              <div class="flex items-center bg-[#0B4F8A] text-white rounded-2xl p-1.5 px-3 shadow-xl border-2 border-white gap-2 font-bold text-xs">
-                <div class="flex items-center gap-1">
-                  <span class="text-sm">🏪</span>
-                  <span class="font-extrabold text-white text-xs leading-none">${storesCount}</span>
-                  <span class="text-[10px] text-sky-200 hidden sm:inline">lojas</span>
+                 aria-label="${storesCount} lojas agrupadas${hasOffers ? `, ${offersCount} com ofertas` : ''}. Clique para aproximar.">
+              <div class="flex items-center bg-[#0B3D91] text-white rounded-2xl p-1.5 px-3 shadow-xl border-2 border-white gap-2 font-bold text-xs">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center font-extrabold text-xs text-white">${storesCount}</span>
+                  <span class="text-[11px] font-semibold text-sky-100 hidden sm:inline">lojas</span>
                 </div>
                 ${
                   hasOffers
                     ? `<div class="h-3.5 w-[1px] bg-white/30"></div>
-                       <div class="flex items-center gap-1 bg-gradient-to-r from-[#E8552B] to-[#FF5722] text-white px-2 py-0.5 rounded-xl text-[10px] font-black border border-white/40 shadow-2xs">
-                         <span class="animate-pulse">🔥</span>
+                       <div class="flex items-center gap-1 bg-[#C1502E] text-white px-2 py-0.5 rounded-xl text-[10px] font-black border border-white/40 shadow-2xs">
+                         <span class="text-xs">🔥</span>
                          <span>${offersCount}</span>
-                         <span class="text-[9px] hidden sm:inline">ofertas</span>
                        </div>`
                     : ''
                 }
               </div>
             </div>
           `,
-          iconSize: [hasOffers ? 140 : 100, 42],
-          iconAnchor: [hasOffers ? 70 : 50, 21],
+          iconSize: [hasOffers ? 130 : 90, 38],
+          iconAnchor: [hasOffers ? 65 : 45, 19],
         });
 
         const clusterMarker = L.marker([cluster.centerLat, cluster.centerLng], {
@@ -574,7 +648,7 @@ function computeStoreClusters(
               bounds.getNorthEast().lng !== bounds.getSouthWest().lng)
           ) {
             map.flyToBounds(bounds, {
-              padding: [60, 60],
+              padding: [50, 50],
               maxZoom: Math.min(curZoom + 2, 17),
               duration: 0.6,
             });
@@ -815,7 +889,89 @@ function computeStoreClusters(
   }, [showSalesExamples, activeSaleExample, mapZoom]);
 
 
-  // Render User Location and Route Line
+  // Handle external navigation to neighborhood or coordinates
+  useEffect(() => {
+    if (targetCoordinates && mapInstanceRef.current) {
+      handleFlyTo(targetCoordinates.lat, targetCoordinates.lng, 15);
+    } else if (targetNeighborhood && mapInstanceRef.current) {
+      const loc = getSalvadorNeighborhoodLocation(targetNeighborhood);
+      if (loc) {
+        handleFlyTo(loc.lat, loc.lng, loc.zoom || 15);
+      }
+    }
+  }, [targetNeighborhood, targetCoordinates]);
+
+  // Render Theft & Safety Incident Markers (Marcadores de Furto Aprovados)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const theftGroup = theftMarkersGroupRef.current;
+    if (!map || !theftGroup) return;
+
+    theftGroup.clearLayers();
+
+    if (!showTheftLayer) return;
+
+    approvedTheftIncidents.forEach((incident) => {
+      const typeConfig = THEFT_TYPE_LABELS[incident.type] || THEFT_TYPE_LABELS['furto_celular'];
+      const hasMedia = (incident.images && incident.images.length > 0) || Boolean(incident.videoUrl);
+
+      const markerHtml = `
+        <div class="relative cursor-pointer select-none group flex flex-col items-center animate-fadeIn">
+          <div class="absolute -inset-2 rounded-full bg-red-600/30 pulse-ring-effect pointer-events-none"></div>
+          
+          <div class="mb-1 px-2 py-0.5 bg-red-600 text-white text-[9px] font-black uppercase tracking-wider rounded-full shadow-lg whitespace-nowrap flex items-center gap-1 border border-white/90">
+            <span>🚨</span>
+            <span>${typeConfig.label.split(' ')[0]}</span>
+            ${hasMedia ? '<span class="text-[8px] bg-white/30 px-1 rounded">📸</span>' : ''}
+          </div>
+
+          <div class="relative flex items-center justify-center w-10 h-10 rounded-2xl shadow-xl transition-all transform hover:scale-115 bg-gradient-to-br from-red-600 to-rose-700 text-white" style="border: 2.5px solid #FFFFFF;">
+            <span class="text-base drop-shadow-xs">${typeConfig.icon}</span>
+            <div class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-white shadow-xs"></div>
+          </div>
+
+          <div class="mt-1 px-2 py-0.5 bg-slate-950/90 text-white rounded-md text-[9px] font-bold shadow-md max-w-[130px] truncate text-center backdrop-blur-xs border border-white/20">
+            ${incident.neighborhood}
+          </div>
+          
+          <div class="w-1.5 h-1.5 bg-slate-950 rotate-45 -mt-0.5"></div>
+        </div>
+      `;
+
+      const theftIcon = L.divIcon({
+        className: 'custom-theft-pin',
+        html: markerHtml,
+        iconSize: [130, 80],
+        iconAnchor: [65, 60],
+      });
+
+      const marker = L.marker([incident.coordinates.lat, incident.coordinates.lng], {
+        icon: theftIcon,
+      });
+
+      marker.bindTooltip(`🚨 ${incident.title} (${incident.neighborhood}) • Clique para ver fotos e vídeo`, {
+        permanent: false,
+        direction: 'top',
+        className: 'custom-leaflet-tooltip',
+      });
+
+      marker.on('click', () => {
+        setActiveTheftIncident(incident);
+        setTheftModalMode('view');
+        setShowTheftModal(true);
+        setActivePinStore(null);
+        setActiveLandmark(null);
+        setActiveSaleExample(null);
+        map.flyTo([incident.coordinates.lat, incident.coordinates.lng], Math.max(map.getZoom(), 16), {
+          duration: 0.8,
+        });
+      });
+
+      theftGroup.addLayer(marker);
+    });
+  }, [approvedTheftIncidents, showTheftLayer, mapZoom]);
+
+  // Render User Location and Dynamic Real Route (OSRM Geometry)
   useEffect(() => {
     const map = mapInstanceRef.current;
     const userGroup = userMarkerRef.current;
@@ -835,38 +991,82 @@ function computeStoreClusters(
     const userIcon = L.divIcon({
       className: 'custom-user-pin',
       html: `
-        <div class="relative flex items-center justify-center w-7 h-7">
+        <div class="relative flex items-center justify-center w-8 h-8">
           <div class="absolute inset-0 rounded-full bg-blue-500/40 pulse-ring-effect"></div>
-          <div class="w-4 h-4 rounded-full bg-[#0B4F8A] border-2 border-white shadow-lg flex items-center justify-center">
-            <div class="w-1.5 h-1.5 rounded-full bg-[#FFC72C]"></div>
+          <div class="w-5 h-5 rounded-full bg-[#0B3D91] border-2 border-white shadow-xl flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full bg-[#FFC72C]"></div>
           </div>
         </div>
       `,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
     });
 
     const userMarker = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon });
-    userMarker.bindTooltip('Você está aqui em Salvador', { permanent: false, direction: 'top' });
+    userMarker.bindTooltip('📍 Você está aqui em Salvador (GPS Real)', { permanent: false, direction: 'top' });
     userGroup.addLayer(userMarker);
 
-    // Draw route line to active store if available
-    if (activePinStore && showRouteLine) {
+    // Draw high-fidelity route if activeRouteDestination is set
+    if (activeRouteDestination && showRouteLine) {
+      let isCancelled = false;
+
+      fetchRealSalvadorRoute(
+        userLocation.lat,
+        userLocation.lng,
+        activeRouteDestination.coordinates.lat,
+        activeRouteDestination.coordinates.lng
+      ).then((routeRes) => {
+        if (isCancelled || !mapInstanceRef.current) return;
+
+        if (routeLineRef.current) {
+          mapInstanceRef.current.removeLayer(routeLineRef.current);
+        }
+
+        const polyline = L.polyline(routeRes.geometry, {
+          color: '#0B3D91',
+          weight: 5,
+          opacity: 0.9,
+          lineJoin: 'round',
+          lineCap: 'round',
+        }).addTo(mapInstanceRef.current);
+
+        routeLineRef.current = polyline;
+
+        // Auto zoom to fit user and destination
+        const bounds = L.latLngBounds([
+          [userLocation.lat, userLocation.lng],
+          [activeRouteDestination.coordinates.lat, activeRouteDestination.coordinates.lng],
+        ]);
+        mapInstanceRef.current.flyToBounds(bounds, { padding: [60, 60], duration: 1.0 });
+      });
+
+      return () => {
+        isCancelled = true;
+      };
+    } else if (activePinStore && showRouteLine) {
+      // Basic dashed line to active store if no full route opened
       const latlngs: [number, number][] = [
         [userLocation.lat, userLocation.lng],
         [activePinStore.coordinates.lat, activePinStore.coordinates.lng],
       ];
 
       const polyline = L.polyline(latlngs, {
-        color: '#0B4F8A',
-        weight: 4,
-        opacity: 0.8,
-        dashArray: '8, 8',
+        color: '#0B3D91',
+        weight: 3,
+        opacity: 0.7,
+        dashArray: '6, 6',
       }).addTo(map);
 
       routeLineRef.current = polyline;
     }
-  }, [userLocation, activePinStore, showRouteLine]);
+  }, [userLocation, activeRouteDestination, activePinStore, showRouteLine]);
+
+  // When userLocation changes or is detected, fly smoothly to user position
+  useEffect(() => {
+    if (userLocation && mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([userLocation.lat, userLocation.lng], 16, { duration: 1.2 });
+    }
+  }, [userLocation]);
 
   // Helper to fly to a location
   const handleFlyTo = (lat: number, lng: number, zoom = 15) => {
@@ -874,13 +1074,9 @@ function computeStoreClusters(
     mapInstanceRef.current.flyTo([lat, lng], zoom, { duration: 1.2 });
   };
 
-  // Center on user
+  // Center on user and request fresh GPS position
   const handleCenterUser = () => {
-    if (userLocation) {
-      handleFlyTo(userLocation.lat, userLocation.lng, 16);
-    } else {
-      onUseLocation();
-    }
+    onUseLocation();
   };
 
   // Zoom controls
@@ -913,168 +1109,132 @@ function computeStoreClusters(
     return d.toFixed(1);
   };
 
+  // Handler to initiate route calculation for any store or point
+  const handleStartRouteCalculation = (dest: RouteDestinationTarget) => {
+    setActiveRouteDestination(dest);
+    setShowRouteCalculator(true);
+    // If user location is not active yet, trigger location request
+    if (!userLocation) {
+      onUseLocation();
+    }
+  };
+
+
   return (
     <div className="relative w-full h-[540px] sm:h-[620px] rounded-3xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-100 flex flex-col">
-      {/* Top Floating Controls Bar */}
-      <div className="absolute top-3 left-3 right-3 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-        {/* Filter Badges */}
-        <div className="pointer-events-auto flex flex-wrap items-center bg-white/95 backdrop-blur-md px-2 py-1.5 rounded-2xl shadow-lg border border-slate-200 text-xs font-bold gap-1">
-          <button
-            onClick={() => {
-              setActiveMapFilter('all');
-              setShowSalesExamples(true);
-            }}
-            className={`px-3 py-1.5 rounded-xl transition-all ${
-              activeMapFilter === 'all'
-                ? 'bg-[#0B4F8A] text-white shadow-sm'
-                : 'text-slate-600 hover:text-[#0B4F8A]'
-            }`}
-          >
-            Todas ({stores.length})
-          </button>
-          <button
-            onClick={() => {
-              setActiveMapFilter('offers_only');
-              setShowSalesExamples(false);
-            }}
-            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
-              activeMapFilter === 'offers_only'
-                ? 'bg-[#E8552B] text-white shadow-sm'
-                : 'text-slate-600 hover:text-[#E8552B]'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Com Oferta</span>
-          </button>
-          <button
-            onClick={() => {
-              setActiveMapFilter('open_only');
-              setShowSalesExamples(false);
-            }}
-            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
-              activeMapFilter === 'open_only'
-                ? 'bg-[#2E9E5B] text-white shadow-sm'
-                : 'text-slate-600 hover:text-[#2E9E5B]'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-[#2E9E5B] inline-block animate-ping"></span>
-            <span>Abertas</span>
-          </button>
-          <button
-            onClick={() => {
-              setShowSalesExamples((prev) => !prev);
-            }}
-            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
-              showSalesExamples
-                ? 'bg-[#E8552B] text-white shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-            title="Exibir Vendas e Promoções nos Bairros de Salvador"
-          >
-            <Tag className="w-3.5 h-3.5 text-[#FFC72C]" />
-            <span>Vendas Salvador ({NEIGHBORHOOD_SALES_EXAMPLES.length})</span>
-          </button>
-        </div>
-
-        {/* Action Buttons: Neighborhood Search, Layers, Landmarks, GPS, Zoom */}
-        <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
-          {/* Salvador 160+ Neighborhoods Search Button */}
-          <button
-            onClick={() => setShowNeighborhoodSearch(true)}
-            className="px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 shadow-lg border bg-white text-[#0B4F8A] hover:bg-[#FFC72C] hover:text-[#0B4F8A] border-slate-200 transition-all active:scale-95"
-            title="Buscar entre todos os 160+ bairros de Salvador"
-          >
-            <Search className="w-3.5 h-3.5 text-[#0B4F8A]" />
-            <span className="hidden sm:inline">160+ Bairros</span>
-          </button>
-
-          {/* Landmarks Toggle */}
-          <button
-            onClick={() => setShowLandmarks((prev) => !prev)}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 shadow-lg border transition-all ${
-              showLandmarks
-                ? 'bg-[#0B4F8A] text-white border-[#0B4F8A]'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-            }`}
-            title="Exibir Pontos Turísticos de Salvador"
-          >
-            <Compass className="w-3.5 h-3.5 text-[#FFC72C]" />
-            <span className="hidden md:inline">Pontos Turísticos</span>
-          </button>
-
-          {/* Layer Selector */}
-          <div className="relative">
+      {/* =========================================================
+          TOP UNIFIED CONTROLS CONTAINER (FLEX-COL: NO OVERLAPPING)
+      ========================================================= */}
+      <div className="absolute top-3 left-3 right-3 z-30 flex flex-col gap-2 pointer-events-none">
+        {/* Row 1: Filter Badges (Left) & Key Action Triggers (Right) */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Filter Pills */}
+          <div className="pointer-events-auto flex items-center bg-white/95 backdrop-blur-md px-2 py-1.5 rounded-2xl shadow-lg border border-slate-200 text-xs font-bold gap-1 overflow-x-auto max-w-full scrollbar-none">
             <button
-              onClick={() => setShowLayersMenu((prev) => !prev)}
-              className="p-2 sm:px-3 sm:py-2 bg-white text-slate-700 hover:text-[#0B4F8A] rounded-2xl shadow-lg border border-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95"
-              title="Mudar estilo do mapa"
+              onClick={() => {
+                setActiveMapFilter('all');
+                setShowSalesExamples(true);
+              }}
+              className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                activeMapFilter === 'all'
+                  ? 'bg-[#0B3D91] text-white shadow-xs'
+                  : 'text-slate-700 hover:text-[#0B3D91] hover:bg-slate-100'
+              }`}
             >
-              <Layers className="w-4 h-4 text-[#0B4F8A]" />
-              <span className="hidden sm:inline">Camadas</span>
+              Todas ({validStores.length})
+            </button>
+            <button
+              onClick={() => {
+                setActiveMapFilter('offers_only');
+                setShowSalesExamples(false);
+              }}
+              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
+                activeMapFilter === 'offers_only'
+                  ? 'bg-[#C1502E] text-white shadow-xs'
+                  : 'text-slate-700 hover:text-[#C1502E] hover:bg-slate-100'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Com Oferta</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveMapFilter('open_only');
+                setShowSalesExamples(false);
+              }}
+              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
+                activeMapFilter === 'open_only'
+                  ? 'bg-[#1F6E43] text-white shadow-xs'
+                  : 'text-slate-700 hover:text-[#1F6E43] hover:bg-slate-100'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-[#1F6E43] inline-block animate-ping"></span>
+              <span>Abertas</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowSalesExamples((prev) => !prev);
+              }}
+              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                showSalesExamples
+                  ? 'bg-[#0B3D91] text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+              title="Exibir Vendas e Promoções nos Bairros de Salvador"
+            >
+              <Tag className="w-3.5 h-3.5 text-[#E5A000]" />
+              <span>Vendas ({NEIGHBORHOOD_SALES_EXAMPLES.length})</span>
             </button>
 
-            {showLayersMenu && (
-              <div className="absolute right-0 top-12 w-48 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200 p-2 z-40 space-y-1 animate-fadeIn">
-                <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 py-1">
-                  Estilo do Mapa
-                </div>
-                {MAP_LAYERS.map((layer) => (
-                  <button
-                    key={layer.id}
-                    onClick={() => {
-                      setCurrentLayerId(layer.id);
-                      setShowLayersMenu(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all ${
-                      currentLayerId === layer.id
-                        ? 'bg-[#0B4F8A] text-white shadow-sm'
-                        : 'text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>{layer.name}</span>
-                    {currentLayerId === layer.id && <span className="text-[#FFC72C]">✓</span>}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Theft Alerts Layer Toggle */}
+            <button
+              onClick={() => setShowTheftLayer((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                showTheftLayer
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+              title="Exibir ou ocultar alertas de furto e segurança comunitária em Salvador"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>Furtos ({approvedTheftIncidents.length})</span>
+            </button>
           </div>
 
-          {/* GPS Location Button */}
-          <button
-            onClick={handleCenterUser}
-            disabled={isLocating}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-white text-[#0B4F8A] hover:bg-[#FFC72C] rounded-2xl shadow-lg border border-slate-200 text-xs font-bold transition-all active:scale-95"
-            title="Minha Posição no Mapa"
-          >
-            <Navigation className={`w-4 h-4 text-[#0B4F8A] ${isLocating ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Meu GPS</span>
-          </button>
-
-          {/* Zoom Buttons */}
-          <div className="flex bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+          {/* Action Triggers: Signal Theft, Landmarks & Neighborhood Search */}
+          <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
+            {/* Signal Theft / Report Incident Button */}
             <button
-              onClick={handleZoomIn}
-              className="p-2 hover:bg-slate-100 text-slate-700 active:scale-95 transition-all"
-              title="Aumentar Zoom"
+              onClick={() => {
+                setTheftModalMode('create');
+                setShowTheftModal(true);
+              }}
+              className="px-3 py-2 rounded-2xl text-xs font-heading font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg border bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-700 hover:to-rose-700 border-red-700 transition-all active:scale-95 cursor-pointer"
+              title="Sinalizar furto ou ocorrência no mapa (aprovado pela moderação)"
             >
-              +
+              <Plus className="w-3.5 h-3.5" />
+              <span className="whitespace-nowrap">Sinalizar Furto</span>
             </button>
-            <div className="w-[1px] bg-slate-200"></div>
+
+            {/* Landmarks Toggle */}
             <button
-              onClick={handleZoomOut}
-              className="p-2 hover:bg-slate-100 text-slate-700 active:scale-95 transition-all"
-              title="Diminuir Zoom"
+              onClick={() => setShowLandmarks((prev) => !prev)}
+              className={`px-3 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 shadow-lg border transition-all cursor-pointer whitespace-nowrap ${
+                showLandmarks
+                  ? 'bg-[#0B3D91] text-white border-[#0B3D91]'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              }`}
+              title="Exibir Pontos Turísticos de Salvador"
             >
-              -
+              <Compass className="w-3.5 h-3.5 text-[#E5A000]" />
+              <span className="hidden sm:inline">Pontos Turísticos</span>
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Quick Neighborhood Navigation Bar (Horizontal Scroll) */}
-      <div className="absolute top-16 left-3 right-3 z-20 overflow-x-auto flex items-center gap-1.5 pb-1 pointer-events-none scrollbar-none">
-        <div className="pointer-events-auto flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-2 py-1.5 rounded-2xl shadow-md border border-slate-200/80">
-          <span className="text-[10px] font-black uppercase tracking-wider text-[#0B4F8A] px-1.5 flex items-center gap-1">
+        {/* Row 2: Quick Neighborhood Horizontal Navigation */}
+        <div className="pointer-events-auto flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-2.5 py-1.5 rounded-2xl shadow-md border border-slate-200/90 overflow-x-auto scrollbar-none w-fit max-w-full">
+          <span className="text-[10px] font-black uppercase tracking-wider text-[#0B4F8A] px-1.5 flex items-center gap-1 whitespace-nowrap">
             <Compass className="w-3 h-3 text-[#FFC72C]" />
             Bairros:
           </span>
@@ -1082,17 +1242,91 @@ function computeStoreClusters(
             <button
               key={nh.name}
               onClick={() => handleFlyTo(nh.lat, nh.lng, nh.zoom)}
-              className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-white hover:bg-[#0B4F8A] text-slate-700 hover:text-white border border-slate-200 transition-all whitespace-nowrap active:scale-95 shadow-2xs"
+              className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-white hover:bg-[#0B4F8A] text-slate-700 hover:text-white border border-slate-200 transition-all whitespace-nowrap active:scale-95 shadow-2xs cursor-pointer"
             >
               {nh.name}
             </button>
           ))}
           <button
             onClick={() => setShowNeighborhoodSearch(true)}
-            className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-[#FFC72C] hover:bg-[#f5bc20] text-[#0B4F8A] border border-amber-300 transition-all whitespace-nowrap active:scale-95 shadow-2xs flex items-center gap-1"
+            className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-[#FFC72C] hover:bg-[#f5bc20] text-[#0B4F8A] border border-amber-300 transition-all whitespace-nowrap active:scale-95 shadow-2xs flex items-center gap-1 cursor-pointer font-black"
           >
             <Search className="w-3 h-3" />
-            <span>Todos os 160+</span>
+            <span>Todos os 160+ Bairros</span>
+          </button>
+        </div>
+      </div>
+
+      {/* =========================================================
+          BOTTOM-RIGHT FLOATING MAP UTILITY CONTROLS (GPS, LAYERS, ZOOM)
+      ========================================================= */}
+      <div className="absolute bottom-4 right-3 z-30 flex flex-col items-end gap-2 pointer-events-none">
+        {/* Layer Selector Dropdown Menu */}
+        <div className="relative pointer-events-auto">
+          <button
+            onClick={() => setShowLayersMenu((prev) => !prev)}
+            className="p-2 sm:px-3 sm:py-2 bg-white/95 backdrop-blur-md text-slate-700 hover:text-[#0B3D91] rounded-2xl shadow-xl border border-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
+            title="Mudar estilo e camada do mapa"
+          >
+            <Layers className="w-4 h-4 text-[#0B3D91]" />
+            <span className="hidden sm:inline">Camadas</span>
+          </button>
+
+          {showLayersMenu && (
+            <div className="absolute right-0 bottom-12 w-48 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200 p-2 z-40 space-y-1 animate-fadeIn">
+              <div className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 py-1">
+                Estilo do Mapa
+              </div>
+              {MAP_LAYERS.map((layer) => (
+                <button
+                  key={layer.id}
+                  onClick={() => {
+                    setCurrentLayerId(layer.id);
+                    setShowLayersMenu(false);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
+                    currentLayerId === layer.id
+                      ? 'bg-[#0B3D91] text-white shadow-xs'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span>{layer.name}</span>
+                  {currentLayerId === layer.id && <span className="text-[#E5A000]">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* GPS Location Button */}
+        <button
+          onClick={handleCenterUser}
+          disabled={isLocating}
+          className="pointer-events-auto flex items-center gap-1.5 px-3.5 py-2.5 bg-white/95 backdrop-blur-md text-[#0B3D91] hover:bg-sky-50 rounded-2xl shadow-xl border border-slate-200 text-xs font-bold transition-all active:scale-95 cursor-pointer"
+          title="Minha Posição no Mapa (GPS Real de Salvador)"
+        >
+          <Navigation className={`w-4 h-4 text-[#0B3D91] ${isLocating ? 'animate-spin text-[#C1502E]' : ''}`} />
+          <span className="font-extrabold">Meu GPS</span>
+        </button>
+
+        {/* Zoom Buttons Stack */}
+        <div className="pointer-events-auto flex flex-col bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+          <button
+            onClick={handleZoomIn}
+            className="p-2.5 hover:bg-slate-100 text-slate-800 font-bold active:scale-95 transition-all cursor-pointer flex items-center justify-center w-9 h-9"
+            title="Aumentar Zoom"
+            aria-label="Aumentar Zoom"
+          >
+            +
+          </button>
+          <div className="h-[1px] bg-slate-200 w-full"></div>
+          <button
+            onClick={handleZoomOut}
+            className="p-2.5 hover:bg-slate-100 text-slate-800 font-bold active:scale-95 transition-all cursor-pointer flex items-center justify-center w-9 h-9"
+            title="Diminuir Zoom"
+            aria-label="Diminuir Zoom"
+          >
+            -
           </button>
         </div>
       </div>
@@ -1267,6 +1501,23 @@ function computeStoreClusters(
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() =>
+                  handleStartRouteCalculation({
+                    id: activeSaleExample.id,
+                    name: activeSaleExample.businessName,
+                    type: 'store',
+                    coordinates: { lat: activeSaleExample.lat, lng: activeSaleExample.lng },
+                    neighborhood: activeSaleExample.neighborhood,
+                  })
+                }
+                className="px-3 py-1.5 bg-[#0B3D91] hover:bg-[#082C69] text-white rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                title="Calcular rota real até este comércio"
+              >
+                <Compass className="w-3.5 h-3.5 text-[#FFC72C]" />
+                <span>Como Chegar</span>
+              </button>
+
               {activeSaleExample.whatsapp && (
                 <a
                   href={`https://wa.me/${activeSaleExample.whatsapp}?text=Ol%C3%A1,%20vi%20a%20promo%C3%A7%C3%A3o%20${encodeURIComponent(
@@ -1304,6 +1555,22 @@ function computeStoreClusters(
                 <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                   {activeLandmark.description}
                 </p>
+                <div className="mt-3">
+                  <button
+                    onClick={() =>
+                      handleStartRouteCalculation({
+                        id: activeLandmark.id,
+                        name: activeLandmark.name,
+                        type: 'landmark',
+                        coordinates: { lat: activeLandmark.lat, lng: activeLandmark.lng },
+                      })
+                    }
+                    className="px-3.5 py-1.5 bg-[#0B3D91] hover:bg-[#082C69] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
+                  >
+                    <Compass className="w-3.5 h-3.5 text-[#FFC72C]" />
+                    <span>Calcular Rota até Aqui</span>
+                  </button>
+                </div>
               </div>
             </div>
             <button
@@ -1316,144 +1583,59 @@ function computeStoreClusters(
         </div>
       )}
 
-      {/* Active Store Interactive Bottom Card */}
+      {/* Active Store Interactive Card (Uses identical StoreCard component with full design consistency) */}
       {activePinStore && (
-        <div className="absolute bottom-4 left-3 right-3 sm:left-4 sm:right-auto sm:max-w-md z-30 bg-white/98 backdrop-blur-md rounded-3xl p-4 sm:p-5 shadow-2xl border border-slate-200/90 animate-fadeIn">
-          {/* Store Info Header */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-3 min-w-0">
-              <img
-                src={activePinStore.logo}
-                alt={activePinStore.name}
-                className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shadow-sm shrink-0"
-              />
-              <div className="min-w-0">
-                <h4 className="text-sm sm:text-base font-heading font-black text-slate-900 leading-tight truncate">
-                  {activePinStore.name}
-                </h4>
-                <div className="flex flex-wrap items-center gap-1.5 mt-1 text-xs text-slate-600">
-                  <span className="font-semibold text-slate-700">{activePinStore.neighborhood}</span>
-                  <span>•</span>
-                  <span className="flex items-center gap-0.5 text-amber-500 font-bold">
-                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    {activePinStore.rating}
-                  </span>
-                  <span>•</span>
-                  <span
-                    className={`font-bold ${
-                      activePinStore.isOpenNow ? 'text-[#2E9E5B]' : 'text-slate-400'
-                    }`}
-                  >
-                    {activePinStore.isOpenNow ? 'Aberto' : 'Fechado'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
+        <div className="absolute bottom-3 left-3 right-3 sm:left-auto sm:right-3 sm:max-w-sm z-30 animate-fadeIn">
+          <div className="relative">
             <button
               onClick={() => setActivePinStore(null)}
-              className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all shrink-0"
-              title="Fechar"
+              className="absolute top-2 right-2 z-20 p-1.5 rounded-full bg-slate-900/60 hover:bg-slate-900/80 text-white backdrop-blur-xs transition-all shadow-md cursor-pointer"
+              title="Fechar card de loja"
             >
               <X className="w-4 h-4" />
             </button>
-          </div>
-
-          {/* Active Offer Banner with Distinct Price & Expiration Date */}
-          {activePinStore.offers && activePinStore.offers.length > 0 && (
-            <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-50/90 via-teal-50/50 to-amber-50/50 border border-emerald-200/80">
-              <div className="flex items-center justify-between gap-2">
-                <span className="px-2 py-0.5 bg-[#FFC72C] text-[#0B4F8A] text-[10px] font-black rounded-lg shrink-0 border border-amber-300 flex items-center gap-1">
-                  <span>🔥</span>
-                  <span>{activePinStore.offers[0].discountBadge}</span>
-                </span>
-                <span className="text-[10px] font-bold text-amber-900 flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-amber-600" />
-                  Até {formatBrazilianDate(activePinStore.offers[0].expiresAt)}
-                </span>
-              </div>
-
-              <p className="text-xs font-bold text-slate-900 mt-1 truncate">
-                {activePinStore.offers[0].title}
-              </p>
-
-              <div className="flex items-center justify-between gap-2 mt-2">
-                <span className="text-xs font-heading font-black text-emerald-700">
-                  {activePinStore.offers[0].discountPrice
-                    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(activePinStore.offers[0].discountPrice)
-                    : activePinStore.offers[0].priceText || activePinStore.offers[0].discountBadge}
-                </span>
-                {activePinStore.offers[0].originalPrice && (
-                  <span className="text-[11px] text-slate-400 line-through">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(activePinStore.offers[0].originalPrice)}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* User Distance & Actions Aligned */}
-          <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-            <div className="text-xs text-slate-500 flex items-center gap-1 font-medium truncate max-w-[140px]">
-              <MapPin className="w-3.5 h-3.5 text-[#0B4F8A] shrink-0" />
-              <span className="truncate">
-                {calculateDistance()
-                  ? `${calculateDistance()} km de você`
-                  : activePinStore.distanceKm
-                  ? `${activePinStore.distanceKm} km do Farol`
-                  : activePinStore.address}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-              {onOpenStreetView && (
-                <button
-                  onClick={() => onOpenStreetView(activePinStore)}
-                  className="h-8.5 px-2.5 bg-sky-50 hover:bg-sky-100 text-[#0B4F8A] rounded-xl font-bold transition-all shadow-2xs active:scale-95 flex items-center gap-1 text-xs border border-sky-200"
-                  title="Abrir Visão da Rua 360°"
-                >
-                  <Eye className="w-3.5 h-3.5 text-[#0B4F8A]" />
-                  <span className="hidden sm:inline">Na Rua</span>
-                </button>
-              )}
-
-              {(activePinStore.googleMapsUrl || activePinStore.mapLink || activePinStore.coordinates) && (
-                <a
-                  href={
-                    activePinStore.googleMapsUrl ||
-                    activePinStore.mapLink ||
-                    `https://www.google.com/maps/dir/?api=1&destination=${activePinStore.coordinates.lat},${activePinStore.coordinates.lng}`
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                  className="h-8.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-[#0B4F8A] rounded-xl font-bold transition-all shadow-2xs active:scale-95 flex items-center gap-1 text-xs"
-                  title="Abrir no Google Maps GPS"
-                >
-                  <Navigation className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">GPS</span>
-                </a>
-              )}
-
-              <button
-                onClick={() => onOpenChat(activePinStore)}
-                className="h-8.5 px-3 bg-[#FFC72C] hover:bg-[#f5bc20] text-[#0B4F8A] rounded-xl font-bold transition-all shadow-2xs active:scale-95 flex items-center gap-1"
-                title="Conversar no Chat"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span className="text-xs hidden sm:inline">Chat</span>
-              </button>
-
-              <button
-                onClick={() => onSelectStore(activePinStore)}
-                className="h-8.5 px-3.5 bg-[#0B4F8A] hover:bg-[#083a66] text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-all"
-              >
-                <span>Ver Loja</span>
-                <ChevronRight className="w-3.5 h-3.5 text-[#FFC72C]" />
-              </button>
-            </div>
+            <StoreCard
+              store={activePinStore}
+              isFavorite={favoriteStoreIds.includes(activePinStore.id)}
+              onToggleFavorite={onToggleFavorite || (() => {})}
+              onSelectStore={onSelectStore}
+              onOpenChat={onOpenChat}
+              onOpenStreetView={onOpenStreetView}
+            />
           </div>
         </div>
+      )}
+
+      {/* Route Calculator Floating Panel (Sem Simulação - OSRM + Open-Meteo + CCR Metrô / Integra) */}
+      {showRouteCalculator && activeRouteDestination && (
+        <RouteCalculatorPanel
+          userLocation={userLocation}
+          destination={activeRouteDestination}
+          onClose={() => {
+            setShowRouteCalculator(false);
+            setActiveRouteDestination(null);
+          }}
+        />
+      )}
+
+      {/* Safety & Theft Incident Modal / Popup (Visualizador & Reporte de Ocorrência) */}
+      {showTheftModal && (
+        <SafetyIncidentModal
+          mode={theftModalMode}
+          incident={activeTheftIncident}
+          userCoordinates={userLocation}
+          onClose={() => {
+            setShowTheftModal(false);
+            setActiveTheftIncident(null);
+          }}
+          onSubmitIncident={(newInc) => {
+            if (onSubmitTheftIncident) {
+              onSubmitTheftIncident(newInc);
+            }
+          }}
+        />
       )}
     </div>
   );
 };
+

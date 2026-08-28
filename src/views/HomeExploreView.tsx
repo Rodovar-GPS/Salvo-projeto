@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Store, StoreCategory, SalvadorNeighborhood } from '../types';
+import { Store, StoreCategory, SalvadorNeighborhood, TheftIncident } from '../types';
 import { STORE_CATEGORIES, SALVADOR_NEIGHBORHOODS } from '../data/mockData';
+import { isValidPublicStore, filterValidPublicStores } from '../utils/storeValidation';
 import { InteractiveMap } from '../components/InteractiveMap';
+import { HeroLiveMap } from '../components/HeroLiveMap';
 import { StoreCard } from '../components/StoreCard';
 import { NeighborhoodGuideModal } from '../components/NeighborhoodGuideModal';
 import { UsageGuideModal } from '../components/UsageGuideModal';
@@ -47,6 +49,9 @@ interface HomeExploreViewProps {
   onOpenAuth?: () => void;
   onOpenChatDemo?: () => void;
   onOpenOffers?: () => void;
+  onOpenNeighborhoodGuide?: () => void;
+  theftIncidents?: TheftIncident[];
+  onSubmitTheftIncident?: (newIncident: Omit<TheftIncident, 'id' | 'createdAt' | 'status' | 'verifiedByAdmin'>) => void;
 }
 
 export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
@@ -68,7 +73,11 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
   onOpenAuth,
   onOpenChatDemo,
   onOpenOffers,
+  onOpenNeighborhoodGuide,
+  theftIncidents,
+  onSubmitTheftIncident,
 }) => {
+
   // View mode: 'map' | 'list'
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
   const [onlyOffers, setOnlyOffers] = useState(false);
@@ -77,10 +86,18 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
   const [showUsageGuide, setShowUsageGuide] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Filter logic
+  const handleOpenNeighborhoodGuide = () => {
+    if (onOpenNeighborhoodGuide) {
+      onOpenNeighborhoodGuide();
+    } else {
+      setShowNeighborhoodGuide(true);
+    }
+  };
+
+  // Filter logic (strict validation against test/placeholder stores)
   const filteredStores = stores.filter((store) => {
-    // Approval check
-    if (store.approvalStatus === 'rejected') return false;
+    // Validate store quality for public listing
+    if (!isValidPublicStore(store)) return false;
 
     // Search query
     if (searchQuery.trim()) {
@@ -121,8 +138,11 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
 
   const totalOffersCount = stores.reduce((acc, s) => acc + (s.offers?.length || 0), 0);
 
-  // Featured sample store for product preview
-  const sampleStore = stores.find((s) => s.offers && s.offers.length > 0) || stores[0];
+  // Authenticated real featured store (strictly valid public store)
+  const realFeaturedStore =
+    stores.find((s) => s.isFeatured && isValidPublicStore(s)) ||
+    stores.find((s) => isValidPublicStore(s) && s.offers && s.offers.length > 0) ||
+    stores.find((s) => isValidPublicStore(s));
 
   const handleScrollToMap = () => {
     setViewMode('map');
@@ -150,8 +170,65 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
       {/* =========================================================
           HERO SECTION (DESKTOP: 2 COLUMNS | MOBILE: SINGLE COLUMN)
       ========================================================= */}
-      <section className="bg-gradient-to-br from-[#0B4F8A] via-[#0B4F8A] to-[#07365F] rounded-3xl p-5 sm:p-8 lg:p-10 text-white shadow-xl relative overflow-hidden border border-blue-900/40">
-        {/* Subtle geometric light accent */}
+      <section className="bg-gradient-to-br from-[#0B3D91] via-[#082C69] to-[#051C44] rounded-3xl p-5 sm:p-8 lg:p-10 text-white shadow-xl relative overflow-hidden border border-blue-900/50">
+        {/* Padrão Sutil de Azulejo Português Baiano (~8% opacidade) */}
+        <svg
+          className="absolute inset-0 w-full h-full opacity-[0.08] pointer-events-none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            <pattern
+              id="azulejo-pattern-hero"
+              width="56"
+              height="56"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M28 0 L56 28 L28 56 L0 28 Z"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="1.2"
+              />
+              <circle cx="28" cy="28" r="9" fill="none" stroke="#FFFFFF" strokeWidth="1" />
+              <path
+                d="M28 8 L28 48 M8 28 L48 28"
+                stroke="#FFFFFF"
+                strokeWidth="0.8"
+              />
+              <circle cx="0" cy="0" r="4" fill="none" stroke="#FFFFFF" strokeWidth="0.8" />
+              <circle cx="56" cy="0" r="4" fill="none" stroke="#FFFFFF" strokeWidth="0.8" />
+              <circle cx="0" cy="56" r="4" fill="none" stroke="#FFFFFF" strokeWidth="0.8" />
+              <circle cx="56" cy="56" r="4" fill="none" stroke="#FFFFFF" strokeWidth="0.8" />
+              <path
+                d="M0 28 C10 22 18 22 28 28 C18 34 10 34 0 28 Z"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="0.6"
+              />
+              <path
+                d="M56 28 C46 22 38 22 28 28 C38 34 46 34 56 28 Z"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="0.6"
+              />
+              <path
+                d="M28 0 C22 10 22 18 28 28 C34 18 34 10 28 0 Z"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="0.6"
+              />
+              <path
+                d="M28 56 C22 46 22 38 28 28 C34 38 34 46 28 56 Z"
+                fill="none"
+                stroke="#FFFFFF"
+                strokeWidth="0.6"
+              />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#azulejo-pattern-hero)" />
+        </svg>
+
+        {/* Ambient atmospheric glows */}
         <div className="absolute -right-16 -bottom-16 w-80 h-80 bg-[#FFC72C]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute left-1/3 -top-20 w-64 h-64 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -162,79 +239,79 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
           {/* ESQUERDA: Informações e Ações Principais */}
           <div className="lg:col-span-7 space-y-5">
             {/* Tag de Localização */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-wider text-sky-100 border border-white/20 shadow-2xs">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-sky-100 border border-white/20 shadow-2xs">
               <MapPin className="w-3.5 h-3.5 text-[#FFC72C] shrink-0" />
               <span>SALVADOR • BAHIA</span>
             </div>
 
-            {/* H1 Principal */}
-            <h1 className="text-4xl xl:text-5xl font-heading font-black tracking-tight leading-[1.12] text-white">
-              Encontre o melhor de Salvador.
+            {/* H1 Principal com Tipografia de Destaque do Design System (Fraunces) */}
+            <h1 className="text-4xl xl:text-5xl font-display font-black tracking-tight leading-[1.15] text-white">
+              SALVÔ — O Guia Oficial de Salvador
             </h1>
 
             {/* Textos Descritivos com Alta Legibilidade */}
             <div className="space-y-1.5 text-sky-100 text-base leading-relaxed max-w-xl">
               <p className="font-semibold text-white/95 text-lg">
-                Descubra lojas, ofertas e serviços perto de você.
+                Encontre tudo de Salvador em um só lugar.
               </p>
-              <p className="text-sky-100/85 text-sm">
-                Explore o comércio local de Salvador, encontre ofertas e descubra novos lugares.
+              <p className="text-sky-100/90 text-sm leading-relaxed">
+                Descubra o comércio local, ofertas exclusivas e serviços perto de você com a energia única e o axé da Bahia.
               </p>
             </div>
 
             {/* Botões de Ação Padronizados */}
             <div className="pt-2 flex flex-wrap items-center gap-3">
-              {/* Botão Primário: AMARELO */}
+              {/* Botão Primário: AMARELO CTA */}
               <button
                 onClick={handleScrollToMap}
-                className="px-6 py-3.5 bg-[#FFC72C] hover:bg-[#F5BC20] text-[#0B4F8A] rounded-2xl text-sm font-heading font-black uppercase tracking-wider transition-all duration-150 flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#FFC72C]/60 cursor-pointer"
+                className="px-6 py-3.5 bg-[#FFC72C] hover:bg-[#F0B719] text-[#0B3D91] rounded-2xl text-sm font-heading font-black uppercase tracking-wider transition-all duration-150 flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#FFC72C]/60 cursor-pointer"
               >
-                <Compass className="w-4 h-4 text-[#0B4F8A] shrink-0" />
+                <Compass className="w-4 h-4 text-[#0B3D91] shrink-0" />
                 <span>Explorar Salvador</span>
               </button>
 
-              {/* Botão Secundário: AZUL / Branco com Borda */}
+              {/* Botão Secundário: ACCENT-WARM (Terracota) */}
               <button
                 onClick={handleGoToOffers}
-                className="px-6 py-3.5 bg-white/10 hover:bg-white text-white hover:text-[#0B4F8A] border border-white/30 hover:border-white rounded-2xl text-sm font-heading font-bold tracking-wide transition-all duration-150 flex items-center gap-2 backdrop-blur-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer"
+                className="px-6 py-3.5 bg-[#C1502E] hover:bg-[#A33F22] text-white border border-[#C1502E] rounded-2xl text-sm font-heading font-bold tracking-wide transition-all duration-150 flex items-center gap-2 shadow-sm active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#C1502E]/60 cursor-pointer"
               >
-                <Sparkles className="w-4 h-4 text-[#FFC72C] shrink-0" />
+                <Sparkles className="w-4 h-4 text-white shrink-0" />
                 <span>Ver ofertas</span>
               </button>
 
-              {/* Guias Auxiliares */}
+              {/* Explorar Bairros */}
               <button
-                onClick={() => setShowNeighborhoodGuide(true)}
-                className="px-4 py-3 text-sky-200 hover:text-white text-xs font-bold hover:underline inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+                onClick={handleOpenNeighborhoodGuide}
+                className="px-5 py-3.5 bg-white/15 hover:bg-white/25 text-white border border-white/20 rounded-2xl text-sm font-heading font-bold tracking-wide transition-all duration-150 flex items-center gap-2 shadow-sm active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer"
               >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Guia dos Bairros</span>
+                <MapPin className="w-4 h-4 text-[#FFC72C] shrink-0" />
+                <span>Explorar Bairros</span>
               </button>
             </div>
 
-            {/* Métricas Rápidas */}
-            <div className="pt-2 flex items-center gap-4 text-xs font-semibold text-sky-100">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#FFC72C]" />
-                <span><strong className="text-white font-black">{stores.length}</strong> Lojas Cadastradas</span>
+            {/* 3 Métricas com Ícones do Novo Set */}
+            <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-semibold text-sky-100">
+              <div className="flex items-center gap-2">
+                <StoreIcon className="w-4 h-4 text-[#FFC72C] shrink-0" strokeWidth={2} />
+                <span><strong className="text-white font-bold">{stores.length}</strong> Lojas Cadastradas</span>
               </div>
-              <span>•</span>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#E8552B]" />
-                <span><strong className="text-white font-black">{totalOffersCount}</strong> Ofertas Ativas</span>
+              <span className="text-white/30">•</span>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#C1502E] shrink-0" strokeWidth={2} />
+                <span><strong className="text-white font-bold">{totalOffersCount}</strong> Ofertas Ativas</span>
               </div>
-              <span>•</span>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                <span><strong className="text-white font-black">{SALVADOR_NEIGHBORHOODS.length}</strong> Bairros Cobertos</span>
+              <span className="text-white/30">•</span>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#1F6E43] shrink-0" strokeWidth={2} />
+                <span><strong className="text-white font-bold">{SALVADOR_NEIGHBORHOODS.length}</strong> Bairros</span>
               </div>
             </div>
           </div>
 
-          {/* DIREITA: Representação Visual Real do Produto (SALVÔ Live Preview) */}
+          {/* DIREITA: Widget SALVÔ AO VIVO (Resumo ao Vivo com Mini-Mapa Real + Loja Real) */}
           <div className="lg:col-span-5">
-            <div className="bg-slate-900/60 backdrop-blur-xl border border-white/20 rounded-3xl p-5 shadow-2xl space-y-4 text-white relative">
-              {/* Header do Mini Card */}
+            <div className="bg-slate-900/70 backdrop-blur-xl border border-white/20 rounded-3xl p-5 shadow-2xl space-y-4 text-white relative">
+              {/* Header do Widget */}
               <div className="flex items-center justify-between pb-3 border-b border-white/10 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="relative flex h-2.5 w-2.5">
@@ -243,71 +320,69 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
                   </span>
                   <span className="font-heading font-black tracking-wide text-white">SALVÔ AO VIVO</span>
                 </div>
-                <span className="text-[10px] font-bold text-sky-200 bg-white/10 px-2 py-0.5 rounded-full uppercase">
-                  Salvador • BA
+                <span className="text-[10px] font-bold text-sky-200 bg-white/10 px-2.5 py-0.5 rounded-full uppercase">
+                  Resumo em Tempo Real
                 </span>
               </div>
 
-              {/* Stylized Mini Map Radar Graphic */}
-              <div className="relative h-28 rounded-2xl bg-gradient-to-r from-blue-950 to-[#0B4F8A] border border-white/10 overflow-hidden flex items-center justify-center p-3">
-                {/* Coastal silhouette effect */}
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#FFC72C_1px,transparent_1px)] [background-size:12px_12px]" />
-                
-                {/* Map Pins on Salvador landmarks */}
-                <div className="absolute top-4 left-6 flex items-center gap-1 bg-white/90 text-[#0B4F8A] px-2 py-0.5 rounded-lg text-[10px] font-black shadow-md">
-                  <MapPin className="w-3 h-3 text-[#E8552B]" />
-                  <span>Pelourinho</span>
-                </div>
-                <div className="absolute bottom-4 left-10 flex items-center gap-1 bg-white/90 text-[#0B4F8A] px-2 py-0.5 rounded-lg text-[10px] font-black shadow-md">
-                  <MapPin className="w-3 h-3 text-[#0B4F8A]" />
-                  <span>Barra</span>
-                </div>
-                <div className="absolute top-7 right-8 flex items-center gap-1 bg-[#FFC72C] text-[#0B4F8A] px-2 py-0.5 rounded-lg text-[10px] font-black shadow-md animate-bounce">
-                  <Sparkles className="w-3 h-3 text-[#0B4F8A]" />
-                  <span>Rio Vermelho 🔥</span>
-                </div>
-              </div>
+              {/* Mini-Mapa Real com Leaflet & Bairros em Destaque */}
+              <HeroLiveMap
+                stores={stores}
+                onSelectStore={onSelectStore}
+                onExploreClick={handleScrollToMap}
+              />
 
-              {/* Card de Loja Real em Destaque */}
-              {sampleStore && (
+              {/* Card de Loja Real em Destaque (ou Estado Vazio Elegante) */}
+              {realFeaturedStore ? (
                 <div
-                  onClick={() => onSelectStore(sampleStore)}
-                  className="bg-white text-slate-800 rounded-2xl p-3.5 shadow-md flex items-center gap-3.5 cursor-pointer hover:scale-[1.02] transition-all group"
+                  onClick={() => onSelectStore(realFeaturedStore)}
+                  className="bg-white text-slate-800 rounded-2xl p-3.5 shadow-md flex items-center gap-3.5 cursor-pointer hover:scale-[1.01] transition-all group"
                 >
                   <img
-                    src={sampleStore.coverImage || sampleStore.logo || (sampleStore.galleryImages && sampleStore.galleryImages[0]) || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=80'}
-                    alt={sampleStore.name}
+                    src={
+                      realFeaturedStore.coverImage ||
+                      realFeaturedStore.logo ||
+                      (realFeaturedStore.galleryImages && realFeaturedStore.galleryImages[0]) ||
+                      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=80'
+                    }
+                    alt={realFeaturedStore.name}
                     className="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <h4 className="font-heading font-black text-sm text-slate-900 truncate">
-                        {sampleStore.name}
+                      <h4 className="font-heading font-bold text-sm text-slate-900 truncate">
+                        {realFeaturedStore.name}
                       </h4>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#0B4F8A] shrink-0" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#0B3D91] shrink-0" />
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                      <span className="font-medium">{sampleStore.neighborhood}</span>
+                      <span className="font-medium">{realFeaturedStore.neighborhood}</span>
                       <span>•</span>
                       <span className="flex items-center gap-0.5 font-bold text-amber-600">
                         <Star className="w-3 h-3 fill-amber-400 text-amber-500" />
-                        {sampleStore.rating}
+                        {realFeaturedStore.rating}
                       </span>
                     </div>
-                    {sampleStore.offers && sampleStore.offers.length > 0 && (
-                      <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 text-[10px] font-bold truncate max-w-full">
-                        <Sparkles className="w-3 h-3 text-amber-600 shrink-0" />
-                        <span className="truncate">{sampleStore.offers[0].title}</span>
+                    {realFeaturedStore.offers && realFeaturedStore.offers.length > 0 && (
+                      <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#C1502E]/10 text-[#C1502E] border border-[#C1502E]/20 text-[10px] font-bold truncate max-w-full">
+                        <Sparkles className="w-3 h-3 text-[#C1502E] shrink-0" />
+                        <span className="truncate">{realFeaturedStore.offers[0].title}</span>
                       </div>
                     )}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#0B4F8A] group-hover:translate-x-0.5 transition-all shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#0B3D91] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </div>
+              ) : (
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 text-center flex flex-col items-center justify-center space-y-1">
+                  <StoreIcon className="w-6 h-6 text-sky-200" strokeWidth={1.5} />
+                  <h4 className="font-heading font-bold text-xs text-white">Em breve: lojas em destaque</h4>
+                  <p className="text-[11px] text-sky-200/80">Novos comércios e ofertas da cidade estão em validação.</p>
                 </div>
               )}
 
-              {/* Rodapé do Preview */}
+              {/* Rodapé do Widget */}
               <div className="flex items-center justify-between text-[11px] text-sky-200 font-medium px-1">
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                   Comércio Oficial e Verificado
                 </span>
@@ -322,13 +397,13 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
         ========================================================= */}
         <div className="lg:hidden space-y-4 relative z-10">
           {/* 1. Tag de Localização */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-black uppercase tracking-wider text-sky-100 border border-white/20">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-bold uppercase tracking-wider text-sky-100 border border-white/20">
             <MapPin className="w-3.5 h-3.5 text-[#FFC72C] shrink-0" />
             <span>SALVADOR • BAHIA</span>
           </div>
 
-          {/* 2. Headline H1 */}
-          <h1 className="text-2xl sm:text-3xl font-heading font-black tracking-tight leading-tight text-white">
+          {/* 2. Headline H1 com Tipografia Fraunces */}
+          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight leading-tight text-white">
             Encontre o melhor de Salvador.
           </h1>
 
@@ -349,55 +424,88 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
           </div>
 
           {/* 5. Botões de Ação Mobile */}
-          <div className="grid grid-cols-2 gap-2.5 pt-1">
-            {/* Botão Primário: AMARELO */}
-            <button
-              onClick={handleScrollToMap}
-              className="w-full min-h-[44px] py-3 px-3 bg-[#FFC72C] active:bg-[#F5BC20] text-[#0B4F8A] rounded-2xl text-xs font-heading font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform"
-            >
-              <Compass className="w-4 h-4 text-[#0B4F8A] shrink-0" />
-              <span className="truncate">Explorar Salvador</span>
-            </button>
+          <div className="space-y-2 pt-1">
+            <div className="grid grid-cols-2 gap-2">
+              {/* Botão Primário: AMARELO CTA */}
+              <button
+                onClick={handleScrollToMap}
+                className="w-full min-h-[44px] py-2.5 px-3 bg-[#FFC72C] active:bg-[#F0B719] text-[#0B3D91] rounded-2xl text-xs font-heading font-black tracking-wide flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-transform cursor-pointer"
+              >
+                <Compass className="w-4 h-4 text-[#0B3D91] shrink-0" />
+                <span className="whitespace-nowrap font-black">Explorar no Mapa</span>
+              </button>
 
-            {/* Segundo Botão: AZUL / Branco com Borda */}
+              {/* Segundo Botão: ACCENT-WARM (Terracota) */}
+              <button
+                onClick={handleGoToOffers}
+                className="w-full min-h-[44px] py-2.5 px-3 bg-[#C1502E] active:bg-[#A33F22] text-white border border-[#C1502E] rounded-2xl text-xs font-heading font-bold tracking-wide flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-transform cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-white shrink-0" />
+                <span className="whitespace-nowrap font-bold">Ver Ofertas</span>
+              </button>
+            </div>
+
+            {/* Botão Guia dos Bairros Mobile */}
             <button
-              onClick={handleGoToOffers}
-              className="w-full min-h-[44px] py-3 px-3 bg-white/15 active:bg-white text-white active:text-[#0B4F8A] border border-white/30 rounded-2xl text-xs font-heading font-bold tracking-wide flex items-center justify-center gap-1.5 backdrop-blur-md active:scale-95 transition-transform"
+              onClick={handleOpenNeighborhoodGuide}
+              className="w-full min-h-[42px] py-2 px-3.5 bg-white/15 hover:bg-white/20 active:bg-white/25 backdrop-blur-md border border-white/25 rounded-2xl text-white text-xs font-bold flex items-center justify-between shadow-xs transition-all active:scale-98 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-[#FFC72C] shrink-0" />
-              <span className="truncate">Ver ofertas</span>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#FFC72C] shrink-0" />
+                <span className="font-heading font-bold">Explorar Bairros de Salvador</span>
+              </div>
+              <span className="text-[10px] font-black uppercase text-[#FFC72C] bg-black/20 px-2 py-0.5 rounded-lg border border-white/15">
+                Guia Cultural →
+              </span>
             </button>
           </div>
 
-          {/* 6. Prévia Visual Compacta do Produto no Mobile */}
-          {sampleStore && (
-            <div
-              onClick={() => onSelectStore(sampleStore)}
-              className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3 text-white flex items-center justify-between gap-3 active:scale-98 transition-transform cursor-pointer"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <img
-                  src={sampleStore.coverImage || sampleStore.logo || (sampleStore.galleryImages && sampleStore.galleryImages[0]) || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=80'}
-                  alt={sampleStore.name}
-                  className="w-10 h-10 rounded-xl object-cover border border-white/20 shrink-0"
-                />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1">
-                    <p className="font-heading font-bold text-xs text-white truncate">
-                      {sampleStore.name}
+          {/* 6. Prévia Visual do Produto no Mobile (Mini-mapa e Card de Loja Real) */}
+          <div className="space-y-2.5 pt-1">
+            <HeroLiveMap
+              stores={stores}
+              onSelectStore={onSelectStore}
+              onExploreClick={handleScrollToMap}
+            />
+
+            {realFeaturedStore ? (
+              <div
+                onClick={() => onSelectStore(realFeaturedStore)}
+                className="bg-white/15 backdrop-blur-md border border-white/20 rounded-2xl p-3 text-white flex items-center justify-between gap-3 active:scale-98 transition-transform cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <img
+                    src={
+                      realFeaturedStore.coverImage ||
+                      realFeaturedStore.logo ||
+                      (realFeaturedStore.galleryImages && realFeaturedStore.galleryImages[0]) ||
+                      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=80'
+                    }
+                    alt={realFeaturedStore.name}
+                    className="w-10 h-10 rounded-xl object-cover border border-white/20 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1">
+                      <p className="font-heading font-bold text-xs text-white truncate">
+                        {realFeaturedStore.name}
+                      </p>
+                      <CheckCircle2 className="w-3 h-3 text-[#FFC72C] shrink-0" />
+                    </div>
+                    <p className="text-[10px] text-sky-200 truncate">
+                      {realFeaturedStore.neighborhood} • ★ {realFeaturedStore.rating}
                     </p>
-                    <CheckCircle2 className="w-3 h-3 text-[#FFC72C] shrink-0" />
                   </div>
-                  <p className="text-[10px] text-sky-200 truncate">
-                    {sampleStore.neighborhood} • ★ {sampleStore.rating}
-                  </p>
                 </div>
+                <span className="px-2.5 py-1 bg-[#FFC72C] text-[#0B3D91] text-[10px] font-black rounded-lg uppercase tracking-wider shrink-0">
+                  Ver Loja
+                </span>
               </div>
-              <span className="px-2 py-1 bg-[#FFC72C] text-[#0B4F8A] text-[10px] font-black rounded-lg uppercase tracking-wider shrink-0">
-                Ver Loja
-              </span>
-            </div>
-          )}
+            ) : (
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/15 text-center text-xs text-sky-200">
+                Em breve: lojas em destaque
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -420,7 +528,7 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
           setOnlyOpen={setOnlyOpen}
           stores={stores}
           filteredCount={filteredStores.length}
-          onOpenNeighborhoodGuide={() => setShowNeighborhoodGuide(true)}
+          onOpenNeighborhoodGuide={handleOpenNeighborhoodGuide}
         />
       </section>
 
@@ -440,7 +548,13 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
               userLocation={userLocation}
               onUseLocation={onUseLocation}
               isLocating={isLocating}
+              favoriteStoreIds={favorites}
+              onToggleFavorite={onToggleFavorite}
+              theftIncidents={theftIncidents}
+              onSubmitTheftIncident={onSubmitTheftIncident}
+              targetNeighborhood={selectedNeighborhood !== 'Todos os Bairros' ? selectedNeighborhood : undefined}
             />
+
 
             {/* Quick List Preview under Map */}
             <div id="salvador-stores-section" className="scroll-mt-20">

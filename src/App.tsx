@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   User,
   Store,
+  Offer,
   StoreCategory,
   SalvadorNeighborhood,
   ChatConversation,
@@ -15,6 +16,7 @@ import {
   StoreFollow,
   StorePartnership,
   StorePartnershipType,
+  TheftIncident,
 } from './types';
 import {
   INITIAL_STORES,
@@ -28,9 +30,13 @@ import {
   INITIAL_STORE_PARTNERSHIPS,
 } from './data/mockData';
 import { INITIAL_EVENTS } from './data/eventsData';
+import { INITIAL_THEFT_INCIDENTS } from './data/mockSafetyData';
 import { BonfimRibbon } from './components/BonfimRibbon';
+
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
+import { NeighborhoodGuideModal } from './components/NeighborhoodGuideModal';
+import { FloatingRadioPlayer } from './components/FloatingRadioPlayer';
 
 // Views
 import { SplashView } from './views/SplashView';
@@ -47,6 +53,8 @@ import { AdminDashboardView } from './views/AdminDashboardView';
 import { MerchantRegisterView } from './views/MerchantRegisterView';
 import { EventsView } from './views/EventsView';
 import { ForYouSocialView } from './views/ForYouSocialView';
+import { SalvadorLiveView } from './views/SalvadorLiveView';
+import { SalvoOfficialView } from './views/SalvoOfficialView';
 import { StreetViewExperience } from './components/StreetViewExperience';
 
 export default function App() {
@@ -222,12 +230,28 @@ export default function App() {
     return INITIAL_EVENTS;
   });
 
+  // Theft & Safety Incidents State (persisted in localStorage)
+  const [theftIncidents, setTheftIncidents] = useState<TheftIncident[]>(() => {
+    try {
+      const saved = localStorage.getItem('guia_salvador_thefts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // Fallback
+    }
+    return INITIAL_THEFT_INCIDENTS;
+  });
+
   // Filters State
   const [selectedCategory, setSelectedCategory] = useState<StoreCategory | 'Todas'>('Todas');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<SalvadorNeighborhood | 'Todos os Bairros'>('Todos os Bairros');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isNeighborhoodGuideOpen, setIsNeighborhoodGuideOpen] = useState(false);
+  const [profileInitialMode, setProfileInitialMode] = useState<'client' | 'merchant'>('client');
 
-  // Geolocation simulation (Farol da Barra, Salvador)
+  // Geolocation simulation / browser GPS real
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
 
@@ -276,10 +300,14 @@ export default function App() {
     localStorage.setItem('guia_salvador_events', JSON.stringify(events));
   }, [events]);
 
-  // Handle Geolocation
+  useEffect(() => {
+    localStorage.setItem('guia_salvador_thefts', JSON.stringify(theftIncidents));
+  }, [theftIncidents]);
+
+  // Handle Geolocation - Obter coordenadas reais do GPS do navegador
   const handleUseLocation = () => {
     setIsLocating(true);
-    if ('geolocation' in navigator) {
+    if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setUserLocation({
@@ -288,18 +316,48 @@ export default function App() {
           });
           setIsLocating(false);
         },
-        () => {
-          // Fallback to Salvador standard coordinates (Barra)
-          setUserLocation({ lat: -13.0039, lng: -38.5326 });
+        (error) => {
+          console.warn('GPS permission denied or unavailable, using Salvador center coordinates:', error);
+          // Fallback to Salvador default if user denies permission or device lacks GPS
+          setUserLocation({ lat: -12.9800, lng: -38.4800 });
           setIsLocating(false);
         },
-        { timeout: 5000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-      setUserLocation({ lat: -13.0039, lng: -38.5326 });
+      setUserLocation({ lat: -12.9800, lng: -38.4800 });
       setIsLocating(false);
     }
   };
+
+  // Theft incidents moderation & reporting handlers
+  const handleSubmitTheftIncident = (newIncidentData: Omit<TheftIncident, 'id' | 'createdAt' | 'status' | 'verifiedByAdmin'>) => {
+    const newIncident: TheftIncident = {
+      ...newIncidentData,
+      id: `theft_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      createdAt: new Date().toISOString(),
+      status: 'pending', // Starts pending admin review
+      verifiedByAdmin: false,
+    };
+    setTheftIncidents((prev) => [newIncident, ...prev]);
+  };
+
+  const handleApproveTheftIncident = (incidentId: string) => {
+    setTheftIncidents((prev) =>
+      prev.map((item) => (item.id === incidentId ? { ...item, status: 'approved', verifiedByAdmin: true } : item))
+    );
+  };
+
+  const handleRejectTheftIncident = (incidentId: string) => {
+    setTheftIncidents((prev) =>
+      prev.map((item) => (item.id === incidentId ? { ...item, status: 'rejected' } : item))
+    );
+  };
+
+  const handleDeleteTheftIncident = (incidentId: string) => {
+    setTheftIncidents((prev) => prev.filter((item) => item.id !== incidentId));
+  };
+
 
   // Toggle favorite
   const handleToggleFavorite = (storeId: string) => {
@@ -468,6 +526,139 @@ export default function App() {
     }
   };
 
+  // Toggle Follow Store (Customer -> Store)
+  const handleToggleFollowStore = (storeId: string) => {
+    const isFollowing = storeFollows.some(
+      (f) => f.followerProfileId === currentUser.id && f.storeId === storeId
+    );
+
+    if (isFollowing) {
+      setStoreFollows((prev) =>
+        prev.filter((f) => !(f.followerProfileId === currentUser.id && f.storeId === storeId))
+      );
+    } else {
+      const newFollow: StoreFollow = {
+        id: `sf-${Date.now()}`,
+        followerProfileId: currentUser.id,
+        storeId,
+        createdAt: new Date().toISOString(),
+        notificationsEnabled: true,
+      };
+      setStoreFollows((prev) => [newFollow, ...prev]);
+
+      // Notify store owner if user exists
+      const targetStore = stores.find((s) => s.id === storeId);
+      if (targetStore?.ownerId) {
+        const notif: SocialNotification = {
+          id: `notif-sf-${Date.now()}`,
+          recipientProfileId: targetStore.ownerId,
+          actorProfileId: currentUser.id,
+          actorName: currentUser.name,
+          actorUsername: currentUser.username,
+          actorAvatar: currentUser.avatar,
+          type: 'store_follow',
+          storeId,
+          storeName: targetStore.name,
+          read: false,
+          createdAt: 'Agora mesmo',
+        };
+        setSocialNotifications((prev) => [notif, ...prev]);
+      }
+    }
+  };
+
+  // Propose Store Partnership (Store A -> Store B)
+  const handleProposeStorePartnership = (
+    storeAId: string,
+    storeBId: string,
+    type: StorePartnershipType,
+    title: string,
+    description: string
+  ) => {
+    const newPartnership: StorePartnership = {
+      id: `part-${Date.now()}`,
+      storeAId,
+      storeBId,
+      type,
+      title,
+      description,
+      status: 'proposed',
+      proposedByProfileId: currentUser.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    setStorePartnerships((prev) => [newPartnership, ...prev]);
+
+    // Notify target store owner
+    const storeA = stores.find((s) => s.id === storeAId);
+    const storeB = stores.find((s) => s.id === storeBId);
+    if (storeB?.ownerId) {
+      const notif: SocialNotification = {
+        id: `notif-part-${Date.now()}`,
+        recipientProfileId: storeB.ownerId,
+        actorProfileId: currentUser.id,
+        actorName: storeA?.name || currentUser.name,
+        actorAvatar: storeA?.logo || currentUser.avatar,
+        type: 'partnership_proposed',
+        partnershipId: newPartnership.id,
+        partnershipTitle: title,
+        storeId: storeAId,
+        storeName: storeA?.name,
+        status: 'pending',
+        read: false,
+        createdAt: 'Agora mesmo',
+      };
+      setSocialNotifications((prev) => [notif, ...prev]);
+    }
+  };
+
+  // Accept Store Partnership
+  const handleAcceptStorePartnership = (partnershipId: string) => {
+    setStorePartnerships((prev) =>
+      prev.map((p) =>
+        p.id === partnershipId
+          ? { ...p, status: 'active', updatedAt: new Date().toISOString() }
+          : p
+      )
+    );
+
+    // Update notifications
+    setSocialNotifications((prev) =>
+      prev.map((n) =>
+        n.partnershipId === partnershipId ? { ...n, status: 'accepted', read: true } : n
+      )
+    );
+  };
+
+  // Decline Store Partnership
+  const handleDeclineStorePartnership = (partnershipId: string) => {
+    setStorePartnerships((prev) =>
+      prev.map((p) =>
+        p.id === partnershipId
+          ? { ...p, status: 'declined', updatedAt: new Date().toISOString() }
+          : p
+      )
+    );
+
+    setSocialNotifications((prev) =>
+      prev.map((n) =>
+        n.partnershipId === partnershipId ? { ...n, status: 'declined', read: true } : n
+      )
+    );
+  };
+
+  // End / Dissolve Store Partnership
+  const handleEndStorePartnership = (partnershipId: string) => {
+    setStorePartnerships((prev) =>
+      prev.map((p) =>
+        p.id === partnershipId
+          ? { ...p, status: 'ended', updatedAt: new Date().toISOString() }
+          : p
+      )
+    );
+  };
+
   const handleViewUserProfile = (userId: string) => {
     setViewingProfileUserId(userId);
     setSelectedStoreId(null);
@@ -507,12 +698,45 @@ export default function App() {
   };
 
   // Open chat directly with a store
-  const handleOpenChatWithStore = (store: Store) => {
+  const handleOpenChatWithStore = (store: Store, context?: Offer | string) => {
     let existingConv = conversations.find(
       (c) => c.storeId === store.id && c.clientId === currentUser.id
     );
 
+    let initialMessage = '';
+    if (typeof context === 'string') {
+      initialMessage = context;
+    } else if (context && typeof context === 'object' && 'title' in context) {
+      initialMessage = `Olá! Gostaria de saber mais sobre a oferta "${context.title}" (${context.discountBadge || context.priceText || ''}).`;
+    }
+
     if (!existingConv) {
+      const messages: ChatMessage[] = [
+        {
+          id: `msg-${Date.now()}`,
+          senderId: 'system',
+          senderName: 'Atendimento SALVÔ',
+          senderRole: 'merchant',
+          receiverId: currentUser.id,
+          text: `Olá! Bem-vindo ao atendimento da ${store.name} pelo SALVÔ. Como podemos ajudar?`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          read: true,
+        },
+      ];
+
+      if (initialMessage) {
+        messages.push({
+          id: `msg-${Date.now() + 1}`,
+          senderId: currentUser.id,
+          senderName: currentUser.name,
+          senderRole: currentUser.role,
+          receiverId: store.id,
+          text: initialMessage,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          read: true,
+        });
+      }
+
       const newConv: ChatConversation = {
         id: `conv-${Date.now()}`,
         storeId: store.id,
@@ -521,24 +745,36 @@ export default function App() {
         clientId: currentUser.id,
         clientName: currentUser.name,
         clientAvatar: currentUser.avatar,
-        lastMessage: 'Iniciou uma conversa com a loja.',
+        lastMessage: initialMessage || 'Iniciou uma conversa com a loja.',
         lastMessageTime: 'Agora',
         unreadCount: 0,
-        messages: [
-          {
-            id: `msg-${Date.now()}`,
-            senderId: 'system',
-            senderName: 'Atendimento SALVÔ',
-            senderRole: 'merchant',
-            receiverId: currentUser.id,
-            text: `Olá! Bem-vindo ao atendimento da ${store.name} pelo SALVÔ. Como podemos ajudar?`,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            read: true,
-          },
-        ],
+        messages,
       };
       setConversations((prev) => [newConv, ...prev]);
       existingConv = newConv;
+    } else if (initialMessage) {
+      const newMsg: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderRole: currentUser.role,
+        receiverId: store.id,
+        text: initialMessage,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        read: true,
+      };
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === existingConv!.id
+            ? {
+                ...c,
+                lastMessage: initialMessage,
+                lastMessageTime: 'Agora',
+                messages: [...c.messages, newMsg],
+              }
+            : c
+        )
+      );
     }
 
     setActiveChatTargetStoreId(store.id);
@@ -634,6 +870,52 @@ export default function App() {
             ...s,
             reviews: updatedReviews,
             rating: Number(avgRating.toFixed(1)),
+            reviewCount: updatedReviews.length,
+          };
+        }
+        return s;
+      })
+    );
+  };
+
+  // Edit Review (Alterar avaliação)
+  const handleEditReview = (storeId: string, updatedReview: Review) => {
+    setStores((prev) =>
+      prev.map((s) => {
+        if (s.id === storeId) {
+          const updatedReviews = s.reviews.map((r) =>
+            r.id === updatedReview.id ? { ...updatedReview, edited: true } : r
+          );
+          const avgRating =
+            updatedReviews.length > 0
+              ? updatedReviews.reduce((acc, r) => acc + r.rating, 0) / updatedReviews.length
+              : 5.0;
+          return {
+            ...s,
+            reviews: updatedReviews,
+            rating: Number(avgRating.toFixed(1)),
+            reviewCount: updatedReviews.length,
+          };
+        }
+        return s;
+      })
+    );
+  };
+
+  // Delete Review (Apagar / Excluir avaliação)
+  const handleDeleteReview = (storeId: string, reviewId: string) => {
+    setStores((prev) =>
+      prev.map((s) => {
+        if (s.id === storeId) {
+          const updatedReviews = s.reviews.filter((r) => r.id !== reviewId);
+          const avgRating =
+            updatedReviews.length > 0
+              ? updatedReviews.reduce((acc, r) => acc + r.rating, 0) / updatedReviews.length
+              : 0;
+          return {
+            ...s,
+            reviews: updatedReviews,
+            rating: updatedReviews.length > 0 ? Number(avgRating.toFixed(1)) : 0,
             reviewCount: updatedReviews.length,
           };
         }
@@ -833,51 +1115,70 @@ export default function App() {
     ? users.find((u) => u.id === viewingProfileUserId) || null
     : null;
 
+  const isForYouFullExperience = currentTab === 'for_you' && !selectedStoreId && !activeStreetViewStore;
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col justify-between font-sans selection:bg-[#FFC72C] selection:text-[#0B4F8A]">
-      {/* Main Navbar with embedded Bonfim Ribbon */}
-      <Navbar
-        currentUser={currentUser}
-        activeTab={currentTab}
-        setActiveTab={(tab) => {
-          setSelectedStoreId(null);
-          setActiveStreetViewStore(null);
-          if (tab !== 'profile') {
-            setViewingProfileUserId(null);
-          }
-          setCurrentTab(tab);
-        }}
-        allUsers={users}
-        onSwitchUser={(userId) => {
-          const u = users.find((x) => x.id === userId);
-          if (u) {
-            setCurrentUser(u);
-            setViewingProfileUserId(null);
-            if (u.role === 'merchant') setCurrentTab('merchant_dashboard');
-            else if (u.role === 'admin') setCurrentTab('admin');
-            else setCurrentTab('explore');
+    <div
+      className={`${
+        isForYouFullExperience
+          ? 'h-[100dvh] max-h-[100dvh] overflow-hidden bg-black md:bg-[#F8FAFC]'
+          : 'min-h-screen bg-[#F8FAFC]'
+      } text-slate-800 flex flex-col justify-between font-sans selection:bg-[#FFC72C] selection:text-[#0B4F8A]`}
+    >
+      {/* Main Navbar with embedded Bonfim Ribbon (hidden when in ForYou full 3-column experience) */}
+      {!isForYouFullExperience && (
+        <Navbar
+          currentUser={currentUser}
+          activeTab={currentTab}
+          setActiveTab={(tab) => {
             setSelectedStoreId(null);
             setActiveStreetViewStore(null);
-          }
-        }}
-        onRoleChange={handleRoleChange}
-        onOpenAuth={() => setAppPhase('auth')}
-        onOpenMerchantRegister={() => {
-          setSelectedStoreId(null);
-          setActiveStreetViewStore(null);
-          setViewingProfileUserId(null);
-          setCurrentTab('merchant_register');
-        }}
-        onOpenNeighborhoodGuide={() => {
-          setCurrentTab('explore');
-        }}
-        unreadMessagesCount={conversations.reduce((acc, c) => acc + c.unreadCount, 0)}
-        activeOffersCount={stores.reduce((acc, s) => acc + (s.offers ? s.offers.length : 0), 0)}
-        favoritesCount={favorites.length}
-      />
+            if (tab !== 'profile') {
+              setViewingProfileUserId(null);
+            }
+            setCurrentTab(tab);
+          }}
+          allUsers={users}
+          onSwitchUser={(userId) => {
+            const u = users.find((x) => x.id === userId);
+            if (u) {
+              setCurrentUser(u);
+              setViewingProfileUserId(null);
+              if (u.role === 'merchant') setCurrentTab('merchant_dashboard');
+              else if (u.role === 'admin') setCurrentTab('admin');
+              else setCurrentTab('explore');
+              setSelectedStoreId(null);
+              setActiveStreetViewStore(null);
+            }
+          }}
+          onRoleChange={handleRoleChange}
+          onOpenAuth={() => setAppPhase('auth')}
+          onOpenMerchantRegister={() => {
+            setSelectedStoreId(null);
+            setActiveStreetViewStore(null);
+            setViewingProfileUserId(null);
+            setCurrentTab('merchant_register');
+          }}
+          onOpenNeighborhoodGuide={() => {
+            setIsNeighborhoodGuideOpen(true);
+          }}
+          onOpenProfileMode={(mode) => {
+            setProfileInitialMode(mode);
+            setViewingProfileUserId(null);
+            setCurrentTab('profile');
+          }}
+          unreadMessagesCount={conversations.reduce((acc, c) => acc + c.unreadCount, 0)}
+          activeOffersCount={stores.reduce((acc, s) => acc + (s.offers ? s.offers.length : 0), 0)}
+          favoritesCount={favorites.length}
+        />
+      )}
 
       {/* Main Content Area */}
-      <main className="flex-1 pb-24 md:pb-8 w-full overflow-x-hidden">
+      <main
+        className={`w-full overflow-x-hidden ${
+          isForYouFullExperience ? 'flex-1 h-full min-h-0 flex flex-col overflow-hidden pb-0' : 'flex-1 pb-24 md:pb-8'
+        }`}
+      >
         {/* If viewing Street View 360° Experience */}
         {activeStreetViewStore ? (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -904,6 +1205,18 @@ export default function App() {
             onOpenChat={handleOpenChatWithStore}
             onOpenStreetView={(st) => setActiveStreetViewStore(st)}
             onAddReview={handleAddReview}
+            onEditReview={handleEditReview}
+            onDeleteReview={handleDeleteReview}
+            allStores={stores}
+            allUsers={users}
+            storeFollows={storeFollows}
+            storePartnerships={storePartnerships}
+            onToggleFollowStore={handleToggleFollowStore}
+            onProposePartnership={handleProposeStorePartnership}
+            onAcceptPartnership={handleAcceptStorePartnership}
+            onDeclinePartnership={handleDeclineStorePartnership}
+            onSelectStore={(sId) => setSelectedStoreId(sId)}
+            onViewUserProfile={handleViewUserProfile}
           />
         ) : currentTab === 'explore' ? (
           <HomeExploreView
@@ -924,6 +1237,7 @@ export default function App() {
             isLocating={isLocating}
             onOpenAuth={() => setAppPhase('auth')}
             onOpenOffers={() => setCurrentTab('offers')}
+            onOpenNeighborhoodGuide={() => setIsNeighborhoodGuideOpen(true)}
             onOpenChatDemo={() => {
               if (stores.length > 0) {
                 handleOpenChatWithStore(stores[0]);
@@ -931,8 +1245,11 @@ export default function App() {
                 setCurrentTab('chat');
               }
             }}
+            theftIncidents={theftIncidents}
+            onSubmitTheftIncident={handleSubmitTheftIncident}
           />
         ) : currentTab === 'offers' ? (
+
           <OffersView
             stores={stores}
             onSelectStore={(st) => setSelectedStoreId(st.id)}
@@ -946,8 +1263,27 @@ export default function App() {
             events={events}
             onSelectStore={(st) => setSelectedStoreId(st.id)}
             onOpenChat={handleOpenChatWithStore}
-            onNavigateToOffers={() => setCurrentTab('offers')}
-            onNavigateToEvents={() => setCurrentTab('events')}
+            onNavigateTab={(tab) => {
+              setSelectedStoreId(null);
+              setActiveStreetViewStore(null);
+              if (tab !== 'profile') {
+                setViewingProfileUserId(null);
+              }
+              setCurrentTab(tab);
+            }}
+            onOpenAuth={() => setAppPhase('auth')}
+            onOpenMerchantRegister={() => {
+              setSelectedStoreId(null);
+              setActiveStreetViewStore(null);
+              setViewingProfileUserId(null);
+              setCurrentTab('merchant_register');
+            }}
+            onRoleChange={handleRoleChange}
+            favoriteStoreIds={favorites}
+            onToggleFavoriteStore={handleToggleFavorite}
+            unreadMessagesCount={conversations.reduce((acc, c) => acc + c.unreadCount, 0)}
+            activeOffersCount={stores.reduce((acc, s) => acc + (s.offers ? s.offers.length : 0), 0)}
+            favoritesCount={favorites.length}
           />
         ) : currentTab === 'chat' ? (
           <ChatView
@@ -976,6 +1312,9 @@ export default function App() {
             currentUser={currentUser}
             targetUser={activeViewingUser}
             allUsers={users}
+            allStores={stores}
+            currentMerchantStore={currentMerchantStore}
+            initialProfileMode={profileInitialMode}
             friendships={friendships}
             userFollows={userFollows}
             socialNotifications={socialNotifications}
@@ -1003,6 +1342,18 @@ export default function App() {
             onMarkNotificationAsRead={handleMarkNotificationAsRead}
             onMarkAllNotificationsAsRead={handleMarkAllNotificationsAsRead}
             favoritesCount={favorites.length}
+            onSelectStore={(st) => {
+              setSelectedStoreId(st.id);
+              setCurrentTab('explore');
+            }}
+            onNavigateToTab={(t) => setCurrentTab(t)}
+            onSwitchUser={(userId) => {
+              const u = users.find((x) => x.id === userId);
+              if (u) {
+                setCurrentUser(u);
+                setViewingProfileUserId(null);
+              }
+            }}
           />
         ) : currentTab === 'events' ? (
           <EventsView
@@ -1012,6 +1363,20 @@ export default function App() {
             onUpdateUser={(updated) => setCurrentUser((prev) => ({ ...prev, ...updated }))}
             onOpenAuth={() => setAppPhase('auth')}
           />
+        ) : currentTab === 'weather_traffic' ? (
+          <SalvadorLiveView
+            onNavigateToTab={(t) => setCurrentTab(t)}
+            onSelectStore={(st) => {
+              setSelectedStoreId(st.id);
+              setCurrentTab('explore');
+            }}
+            allStores={stores}
+          />
+        ) : currentTab === 'salvo_official' || (currentTab as string) === 'salvooficial' ? (
+          <SalvoOfficialView
+            currentUser={currentUser}
+            onNavigateToTab={(t) => setCurrentTab(t)}
+          />
         ) : currentTab === 'merchant_dashboard' ? (
           <MerchantDashboardView
             store={currentMerchantStore}
@@ -1019,11 +1384,25 @@ export default function App() {
             conversations={conversations}
             onSendMessage={handleSendMessage}
             currentUser={currentUser}
+            allStores={stores}
+            allUsers={users}
+            storeFollows={storeFollows}
+            storePartnerships={storePartnerships}
+            onProposePartnership={handleProposeStorePartnership}
+            onAcceptPartnership={handleAcceptStorePartnership}
+            onDeclinePartnership={handleDeclineStorePartnership}
+            onEndPartnership={handleEndStorePartnership}
+            onSelectStore={(sId) => {
+              setSelectedStoreId(sId);
+              setCurrentTab('explore');
+            }}
+            onViewUserProfile={handleViewUserProfile}
           />
         ) : currentTab === 'admin' || currentTab === 'admin_dashboard' ? (
           <AdminDashboardView
             stores={stores}
             events={events}
+            theftIncidents={theftIncidents}
             onApproveStore={handleApproveStore}
             onRejectStore={handleRejectStore}
             onDeleteStore={handleDeleteStore}
@@ -1032,8 +1411,12 @@ export default function App() {
             onRejectEvent={handleRejectEvent}
             onToggleFeatureEvent={handleToggleFeatureEvent}
             onDeleteEvent={handleDeleteEvent}
+            onApproveTheftIncident={handleApproveTheftIncident}
+            onRejectTheftIncident={handleRejectTheftIncident}
+            onDeleteTheftIncident={handleDeleteTheftIncident}
           />
         ) : currentTab === 'merchant_register' ? (
+
           <MerchantRegisterView
             onRegisterStore={handleRegisterStore}
             onBack={() => setCurrentTab('explore')}
@@ -1041,50 +1424,71 @@ export default function App() {
         ) : null}
       </main>
 
-      {/* Mobile Bottom Navigation */}
-      <BottomNav
-        currentTab={currentTab}
-        setCurrentTab={(tab) => {
+      {/* Mobile Bottom Navigation (hidden in Para Mim 3-column experience) */}
+      {!isForYouFullExperience && (
+        <BottomNav
+          currentTab={currentTab}
+          setCurrentTab={(tab) => {
+            setSelectedStoreId(null);
+            setActiveStreetViewStore(null);
+            setCurrentTab(tab);
+          }}
+          unreadChatCount={conversations.reduce((acc, c) => acc + c.unreadCount, 0)}
+          favoritesCount={favorites.length}
+          userRole={currentUser.role}
+        />
+      )}
+
+      {/* Footer (hidden in Para Mim 3-column experience) */}
+      {!isForYouFullExperience && (
+        <footer className="hidden md:block bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/salvo-logo.png"
+                alt="SALVÔ"
+                className="w-6 h-6 rounded-lg object-cover border border-slate-100"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = 'https://iili.io/CDs6WS1.jpg';
+                }}
+              />
+              <span className="font-heading font-black text-[#0B4F8A] text-sm">SALVÔ</span>
+              <span className="text-slate-400 font-medium">• Guia Oficial do Comércio Local de Salvador. Conectando pessoas ao comércio local.</span>
+            </div>
+
+            <div className="flex items-center gap-4 text-[11px] font-semibold text-slate-600">
+              <span>Cliente: 100% Grátis</span>
+              <span>•</span>
+              <span>Lojista: R$ 12,00/mês (Simulado)</span>
+              <span>•</span>
+              <button
+                onClick={() => handleRoleChange('admin')}
+                className="text-[#0B4F8A] hover:underline"
+              >
+                Acesso Master / Moderação
+              </button>
+            </div>
+          </div>
+        </footer>
+      )}
+
+      {/* Global Salvador Neighborhood Cultural Guide Modal */}
+      <NeighborhoodGuideModal
+        isOpen={isNeighborhoodGuideOpen}
+        onClose={() => setIsNeighborhoodGuideOpen(false)}
+        onSelectNeighborhood={(n) => {
+          setSelectedNeighborhood(n);
           setSelectedStoreId(null);
           setActiveStreetViewStore(null);
-          setCurrentTab(tab);
+          setCurrentTab('explore');
+          setIsNeighborhoodGuideOpen(false);
         }}
-        unreadChatCount={conversations.reduce((acc, c) => acc + c.unreadCount, 0)}
-        favoritesCount={favorites.length}
-        userRole={currentUser.role}
+        stores={stores}
       />
 
-      {/* Footer */}
-      <footer className="hidden md:block bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <img
-              src="/salvo-logo.png"
-              alt="SALVÔ"
-              className="w-6 h-6 rounded-lg object-cover border border-slate-100"
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = 'https://iili.io/CDs6WS1.jpg';
-              }}
-            />
-            <span className="font-heading font-black text-[#0B4F8A] text-sm">SALVÔ</span>
-            <span className="text-slate-400 font-medium">• Guia Oficial do Comércio Local de Salvador. Conectando pessoas ao comércio local.</span>
-          </div>
-
-          <div className="flex items-center gap-4 text-[11px] font-semibold text-slate-600">
-            <span>Cliente: 100% Grátis</span>
-            <span>•</span>
-            <span>Lojista: R$ 12,00/mês (Simulado)</span>
-            <span>•</span>
-            <button
-              onClick={() => handleRoleChange('admin')}
-              className="text-[#0B4F8A] hover:underline"
-            >
-              Acesso Master / Moderação
-            </button>
-          </div>
-        </div>
-      </footer>
+      {/* Floating Smart Radio Player of Salvador & Bahia */}
+      <FloatingRadioPlayer />
     </div>
   );
 }

@@ -45,7 +45,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           }}
           className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] ${
             activeTab === 'explore'
-              ? 'text-[#0B4F8A]'
+              ? 'text-[#0B3D91]'
               : 'text-slate-500 hover:text-slate-800'
           }`}
           aria-label="Início"
@@ -59,13 +59,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           </div>
           <span
             className={`text-[10px] mt-1 leading-none tracking-tight ${
-              activeTab === 'explore' ? 'font-black text-[#0B4F8A]' : 'font-semibold text-slate-500'
+              activeTab === 'explore' ? 'font-black text-[#0B3D91]' : 'font-semibold text-slate-500'
             }`}
           >
             Início
           </span>
           {activeTab === 'explore' && (
-            <span className="w-1 h-1 rounded-full bg-[#FFC72C] mt-0.5" />
+            <span className="w-1 h-1 rounded-full bg-[#0B3D91] mt-0.5" />
           )}
         </button>
 
@@ -86,7 +86,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         >
           <div className="relative">
             <Compass
-              className="w-5 h-5 stroke-[1.75] text-[#0B4F8A]"
+              className="w-5 h-5 stroke-[1.75] text-[#0B3D91]"
             />
           </div>
           <span className="text-[10px] font-semibold text-slate-600 mt-1 leading-none tracking-tight">
@@ -102,7 +102,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           }}
           className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] ${
             activeTab === 'offers'
-              ? 'text-[#0B4F8A]'
+              ? 'text-[#0B3D91]'
               : 'text-slate-500 hover:text-slate-800'
           }`}
           aria-label="Ofertas"
@@ -111,20 +111,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <Sparkles
               className={`w-5 h-5 transition-transform ${
                 activeTab === 'offers'
-                  ? 'text-[#E8552B] stroke-[2.5] scale-110'
-                  : 'text-[#E8552B] stroke-[1.75]'
+                  ? 'text-[#C1502E] stroke-[2.5] scale-110'
+                  : 'text-[#C1502E] stroke-[1.75]'
               }`}
             />
           </div>
           <span
             className={`text-[10px] mt-1 leading-none tracking-tight ${
-              activeTab === 'offers' ? 'font-black text-[#0B4F8A]' : 'font-semibold text-slate-500'
+              activeTab === 'offers' ? 'font-black text-[#0B3D91]' : 'font-semibold text-slate-500'
             }`}
           >
             Ofertas
           </span>
           {activeTab === 'offers' && (
-            <span className="w-1 h-1 rounded-full bg-[#FFC72C] mt-0.5" />
+            <span className="w-1 h-1 rounded-full bg-[#C1502E] mt-0.5" />
           )}
         </button>
 
@@ -136,7 +136,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           }}
           className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] ${
             activeTab === 'chat'
-              ? 'text-[#0B4F8A]'
+              ? 'text-[#0B3D91]'
               : 'text-slate-500 hover:text-slate-800'
           }`}
           aria-label="Chat com Lojas"
@@ -148,20 +148,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               }`}
             />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-2 min-w-4 h-4 px-1 bg-[#2E9E5B] text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs">
+              <span className="absolute -top-1 -right-2 min-w-4 h-4 px-1 bg-[#1F6E43] text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs">
                 {unreadCount}
               </span>
             )}
           </div>
           <span
             className={`text-[10px] mt-1 leading-none tracking-tight ${
-              activeTab === 'chat' ? 'font-black text-[#0B4F8A]' : 'font-semibold text-slate-500'
+              activeTab === 'chat' ? 'font-black text-[#0B3D91]' : 'font-semibold text-slate-500'
             }`}
           >
             Chat
           </span>
           {activeTab === 'chat' && (
-            <span className="w-1 h-1 rounded-full bg-[#FFC72C] mt-0.5" />
+            <span className="w-1 h-1 rounded-full bg-[#0B3D91] mt-0.5" />
           )}
         </button>
 
@@ -173,7 +173,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           }}
           className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] ${
             activeTab === 'favorites'
-              ? 'text-[#0B4F8A]'
+              ? 'text-[#0B3D91]'
               : 'text-slate-500 hover:text-slate-800'
           }`}
           aria-label="Lojas Favoritas"
@@ -194,13 +194,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           </div>
           <span
             className={`text-[10px] mt-1 leading-none tracking-tight ${
-              activeTab === 'favorites' ? 'font-black text-[#0B4F8A]' : 'font-semibold text-slate-500'
+              activeTab === 'favorites' ? 'font-black text-[#0B3D91]' : 'font-semibold text-slate-500'
             }`}
           >
             Favoritos
           </span>
           {activeTab === 'favorites' && (
-            <span className="w-1 h-1 rounded-full bg-[#FFC72C] mt-0.5" />
+            <span className="w-1 h-1 rounded-full bg-[#0B3D91] mt-0.5" />
           )}
         </button>
       </div>

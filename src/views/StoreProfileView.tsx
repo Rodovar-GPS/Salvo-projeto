@@ -27,6 +27,9 @@ import {
   ShieldCheck,
   X,
   Building2,
+  Pencil,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface StoreProfileViewProps {
@@ -38,6 +41,8 @@ interface StoreProfileViewProps {
   onOpenChat: (store: Store) => void;
   onOpenStreetView?: (store: Store) => void;
   onAddReview: (storeId: string, review: Review) => void;
+  onEditReview?: (storeId: string, review: Review) => void;
+  onDeleteReview?: (storeId: string, reviewId: string) => void;
   allStores?: Store[];
   allUsers?: User[];
   storeFollows?: StoreFollow[];
@@ -75,6 +80,8 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
   onOpenChat,
   onOpenStreetView,
   onAddReview,
+  onEditReview,
+  onDeleteReview,
   allStores = [],
   allUsers = [],
   storeFollows = [],
@@ -107,7 +114,21 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
   const [newComment, setNewComment] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  const photos = [store.coverImage, ...(store.galleryImages || [])].filter(Boolean);
+  // Review Edit and Delete state (Alterar, Apagar e Excluir)
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editingReviewComment, setEditingReviewComment] = useState<string>('');
+  const [editingReviewRating, setEditingReviewRating] = useState<number>(5);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const [reviewActionToast, setReviewActionToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
+
+  const validCover =
+    store.coverImage && store.coverImage.trim().length > 0
+      ? store.coverImage
+      : 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1000&auto=format&fit=crop&q=80';
+
+  const photos = [validCover, ...(store.galleryImages || [])].filter(
+    (url): url is string => Boolean(url && typeof url === 'string' && url.trim().length > 0)
+  );
 
   // Social calculations
   const isFollowing = storeFollows.some(
@@ -169,7 +190,52 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
     onAddReview(store.id, newRev);
     setNewComment('');
     setReviewSubmitted(true);
-    setTimeout(() => setReviewSubmitted(false), 3000);
+    setReviewActionToast({ message: 'Avaliação publicada com sucesso!', type: 'success' });
+    setTimeout(() => {
+      setReviewSubmitted(false);
+      setReviewActionToast(null);
+    }, 3000);
+  };
+
+  // Review Edit/Delete Handlers (Alterar, Apagar e Excluir)
+  const handleStartEditReview = (rev: Review) => {
+    setEditingReviewId(rev.id);
+    setEditingReviewComment(rev.comment);
+    setEditingReviewRating(rev.rating);
+    setDeletingReviewId(null);
+  };
+
+  const handleCancelEditReview = () => {
+    setEditingReviewId(null);
+    setEditingReviewComment('');
+  };
+
+  const handleSaveEditReview = (rev: Review) => {
+    if (!editingReviewComment.trim()) return;
+    const updatedReview: Review = {
+      ...rev,
+      comment: editingReviewComment.trim(),
+      rating: editingReviewRating,
+      date: 'Editado agora',
+      edited: true,
+    };
+    if (onEditReview) {
+      onEditReview(store.id, updatedReview);
+    }
+    setEditingReviewId(null);
+    setEditingReviewComment('');
+    setReviewActionToast({ message: 'Avaliação alterada com sucesso!', type: 'success' });
+    setTimeout(() => setReviewActionToast(null), 3000);
+  };
+
+  const handleDeleteReviewAction = (reviewId: string) => {
+    if (onDeleteReview) {
+      onDeleteReview(store.id, reviewId);
+    }
+    setDeletingReviewId(null);
+    if (editingReviewId === reviewId) setEditingReviewId(null);
+    setReviewActionToast({ message: 'Avaliação excluída com sucesso!', type: 'danger' });
+    setTimeout(() => setReviewActionToast(null), 3000);
   };
 
   const handleShare = () => {
@@ -263,16 +329,20 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
       {/* Main Cover & Gallery Header */}
       <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
         {/* Large Cover Photo */}
-        <div className="relative h-64 sm:h-80 md:h-96 w-full bg-slate-900">
+        <div className="relative min-h-[300px] h-72 sm:h-80 md:h-96 w-full bg-slate-900 overflow-hidden flex flex-col justify-between p-4 sm:p-6">
           <img
-            src={photos[selectedPhotoIndex] || store.coverImage}
+            src={photos[selectedPhotoIndex] || validCover}
             alt={store.name}
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1000&auto=format&fit=crop&q=80';
+            }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-slate-950/40" />
 
           {/* Open/Closed Badge on Top */}
-          <div className="absolute top-4 left-4 flex items-center gap-2">
+          <div className="relative z-10 flex items-center gap-2 flex-wrap">
             <span
               className={`px-3 py-1 rounded-xl text-xs font-black uppercase tracking-wider backdrop-blur-md shadow-md ${
                 store.isOpenNow
@@ -283,19 +353,19 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
               {store.isOpenNow ? '● Aberto Agora' : 'Fechado no Momento'}
             </span>
 
-            <span className="px-3 py-1 rounded-xl bg-black/50 backdrop-blur-md text-white text-xs font-bold">
+            <span className="px-3 py-1 rounded-xl bg-black/60 backdrop-blur-md text-white text-xs font-bold border border-white/10">
               {store.category}
             </span>
           </div>
 
           {/* Bottom Title & Neighborhood on Cover */}
-          <div className="absolute bottom-4 left-4 right-4 text-white flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-bold text-[#FFC72C] mb-1">
-                <MapPin className="w-4 h-4 fill-current" />
-                <span>{store.neighborhood} • Salvador, BA</span>
+          <div className="relative z-10 text-white flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-4">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-black/40 backdrop-blur-md rounded-lg text-xs font-bold text-[#FFC72C] mb-1.5 border border-white/10">
+                <MapPin className="w-3.5 h-3.5 fill-current shrink-0" />
+                <span className="truncate">{store.neighborhood} • Salvador, BA</span>
               </div>
-              <h1 className="font-heading font-black text-2xl sm:text-4xl leading-tight">
+              <h1 className="font-heading font-black text-2xl sm:text-3xl lg:text-4xl leading-tight drop-shadow-md">
                 {store.name}
               </h1>
             </div>
@@ -305,18 +375,18 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
               {onOpenStreetView && (
                 <button
                   onClick={() => onOpenStreetView(store)}
-                  className="px-3.5 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-2xl font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all backdrop-blur-md"
+                  className="px-3.5 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-2xl font-bold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all backdrop-blur-md cursor-pointer"
                 >
-                  <Eye className="w-4 h-4" />
+                  <Eye className="w-4 h-4 shrink-0" />
                   <span>Visão da Rua 360°</span>
                 </button>
               )}
 
-              <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/20">
-                <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
-                <div>
+              <div className="flex items-center gap-2 bg-black/70 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/20">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
+                <div className="flex items-baseline gap-1">
                   <span className="text-sm font-black text-white">{store.rating.toFixed(1)}</span>
-                  <span className="text-[11px] text-white/70 ml-1 font-medium">
+                  <span className="text-[11px] text-white/80 font-medium">
                     ({store.reviewCount} avaliações)
                   </span>
                 </div>
@@ -332,13 +402,21 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
               <button
                 key={idx}
                 onClick={() => setSelectedPhotoIndex(idx)}
-                className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${
+                className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
                   selectedPhotoIndex === idx
                     ? 'border-[#0B4F8A] ring-2 ring-[#0B4F8A]/30 scale-105'
                     : 'border-transparent opacity-70 hover:opacity-100'
                 }`}
               >
-                <img src={img} alt="" className="w-full h-full object-cover" />
+                <img
+                  src={img}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=80';
+                  }}
+                />
               </button>
             ))}
           </div>
@@ -348,47 +426,50 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
       {/* ================================================== */}
       {/* SOCIAL RELATIONSHIPS & COMMUNITY STATS BAR */}
       {/* ================================================== */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Metric Counters (Seguidores, Seguindo, Parceiros) */}
-        <div className="flex items-center gap-6 sm:gap-8 divide-x divide-slate-100">
+        <div className="w-full md:w-auto grid grid-cols-3 divide-x divide-slate-100 gap-1 sm:gap-2">
+          {/* 1. Seguidores */}
           <button
             onClick={() => setShowFollowersModal(true)}
-            className="text-left group transition-all"
+            className="flex flex-col items-center sm:items-start text-center sm:text-left group transition-all px-2 sm:px-4 first:pl-0 cursor-pointer"
           >
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mb-0.5">
-              <Users className="w-3.5 h-3.5 text-[#0B4F8A]" />
-              <span>Seguidores</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-slate-500 font-semibold mb-0.5">
+              <Users className="w-3.5 h-3.5 text-[#0B4F8A] shrink-0" />
+              <span className="whitespace-nowrap">Seguidores</span>
             </div>
             <p className="text-lg sm:text-xl font-heading font-black text-slate-900 group-hover:text-[#0B4F8A] transition-colors">
               {followersList.length}
             </p>
           </button>
 
-          <div className="pl-6 sm:pl-8 text-left">
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mb-0.5">
-              <Building2 className="w-3.5 h-3.5 text-slate-400" />
-              <span>Seguindo</span>
+          {/* 2. Seguindo */}
+          <div className="flex flex-col items-center sm:items-start text-center sm:text-left px-2 sm:px-4">
+            <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-slate-500 font-semibold mb-0.5">
+              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="whitespace-nowrap">Seguindo</span>
             </div>
             <p className="text-lg sm:text-xl font-heading font-black text-slate-900">
               {Math.max(activePartnerships.length, 1)}
             </p>
           </div>
 
+          {/* 3. Parceiros */}
           <button
             onClick={() => setShowPartnersModal(true)}
-            className="pl-6 sm:pl-8 text-left group transition-all"
+            className="flex flex-col items-center sm:items-start text-center sm:text-left group transition-all px-2 sm:px-4 cursor-pointer"
           >
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mb-0.5">
-              <Handshake className="w-3.5 h-3.5 text-[#E8552B]" />
-              <span>Parceiros</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs text-slate-500 font-semibold mb-0.5">
+              <Handshake className="w-3.5 h-3.5 text-[#E8552B] shrink-0" />
+              <span className="whitespace-nowrap">Parceiros</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-col sm:flex-row items-center sm:items-baseline gap-1">
               <p className="text-lg sm:text-xl font-heading font-black text-[#0B4F8A] group-hover:text-[#E8552B] transition-colors">
                 {activePartnerships.length}
               </p>
               {activePartnerships.length > 0 && (
-                <span className="px-2 py-0.5 bg-[#FFC72C]/20 border border-amber-300 text-[#0B4F8A] text-[10px] font-black rounded-lg uppercase">
-                  🤝 PARCEIROS
+                <span className="px-1.5 py-0.5 bg-[#FFC72C]/20 border border-amber-300 text-[#0B4F8A] text-[9px] font-black rounded-md uppercase whitespace-nowrap">
+                  🤝 Ativos
                 </span>
               )}
             </div>
@@ -396,12 +477,12 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
         </div>
 
         {/* Action Controls: Follow / Partnership Request */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto justify-end flex-wrap">
+        <div className="flex items-center gap-2.5 w-full md:w-auto justify-center sm:justify-end flex-wrap pt-2 sm:pt-0 border-t md:border-t-0 border-slate-100">
           {/* Client -> Store Follow Button */}
           {onToggleFollowStore && (
             <button
               onClick={() => onToggleFollowStore(store.id)}
-              className={`h-11 px-5 rounded-2xl font-heading font-bold text-xs flex items-center gap-2 transition-all shadow-2xs active:scale-95 ${
+              className={`h-11 px-5 rounded-2xl font-heading font-bold text-xs flex items-center gap-2 transition-all shadow-2xs active:scale-95 cursor-pointer ${
                 isFollowing
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300'
                   : 'bg-[#0B4F8A] hover:bg-[#083a66] text-white'
@@ -438,16 +519,16 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
                 ) : (
                   <button
                     onClick={() => onAcceptPartnership?.(existingPartnershipWithUser.id)}
-                    className="h-11 px-4 bg-[#FFC72C] hover:bg-amber-400 text-[#0B4F8A] rounded-2xl flex items-center gap-2 text-xs font-black shadow-2xs active:scale-95 transition-all"
+                    className="h-11 px-4 bg-[#FFC72C] hover:bg-amber-400 text-[#0B4F8A] rounded-2xl flex items-center gap-2 text-xs font-black shadow-2xs active:scale-95 transition-all cursor-pointer"
                   >
-                    <Handshake className="w-4 h-4" />
+                    <Check className="w-4 h-4 text-[#0B3D91]" />
                     <span>Aceitar Proposta de Parceria</span>
                   </button>
                 )
               ) : (
                 <button
                   onClick={() => setShowProposeModal(true)}
-                  className="h-11 px-4 bg-gradient-to-r from-orange-500 to-[#E8552B] hover:from-orange-600 hover:to-orange-700 text-white rounded-2xl flex items-center gap-2 text-xs font-black shadow-sm active:scale-95 transition-all"
+                  className="h-11 px-4 bg-gradient-to-r from-orange-500 to-[#E8552B] hover:from-orange-600 hover:to-orange-700 text-white rounded-2xl flex items-center gap-2 text-xs font-black shadow-sm active:scale-95 transition-all cursor-pointer"
                 >
                   <Handshake className="w-4 h-4 text-[#FFC72C]" />
                   <span>Solicitar Parceria 🤝</span>
@@ -816,37 +897,191 @@ export const StoreProfileView: React.FC<StoreProfileViewProps> = ({
               )}
             </form>
 
+            {/* Notification Toast for Review Actions */}
+            {reviewActionToast && (
+              <div
+                className={`p-3 rounded-2xl text-xs font-bold flex items-center justify-between animate-fadeIn ${
+                  reviewActionToast.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {reviewActionToast.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  )}
+                  <span>{reviewActionToast.message}</span>
+                </div>
+                <button
+                  onClick={() => setReviewActionToast(null)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             {/* List of reviews */}
             <div className="space-y-3">
               {store.reviews && store.reviews.length > 0 ? (
-                store.reviews.map((rev) => (
-                  <div key={rev.id} className="p-3.5 rounded-2xl bg-white border border-slate-100 shadow-2xs">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        {rev.userAvatar ? (
-                          <img
-                            src={rev.userAvatar}
-                            alt={rev.userName}
-                            className="w-7 h-7 rounded-full object-cover border border-slate-200"
-                          />
-                        ) : (
-                          <div className="w-7 h-7 rounded-full bg-blue-100 text-[#0B4F8A] font-bold text-xs flex items-center justify-center">
-                            {rev.userName.charAt(0)}
+                store.reviews.map((rev) => {
+                  const isEditing = editingReviewId === rev.id;
+                  const isDeleting = deletingReviewId === rev.id;
+
+                  return (
+                    <div
+                      key={rev.id}
+                      className="p-3.5 rounded-2xl bg-white border border-slate-100 shadow-2xs space-y-2 hover:border-slate-200 transition-colors"
+                    >
+                      {/* Review Header: User info + Action Buttons */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {rev.userAvatar ? (
+                            <img
+                              src={rev.userAvatar}
+                              alt={rev.userName}
+                              className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-blue-100 text-[#0B4F8A] font-bold text-xs flex items-center justify-center shrink-0">
+                              {rev.userName.charAt(0)}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="font-bold text-xs text-slate-800 truncate">
+                              {rev.userName}
+                            </span>
+                            {rev.edited && (
+                              <span className="text-[10px] text-amber-600 font-medium italic shrink-0">
+                                (editado)
+                              </span>
+                            )}
                           </div>
-                        )}
-                        <span className="font-bold text-xs text-slate-800">{rev.userName}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[10px] text-slate-400">{rev.date}</span>
+
+                          {/* Action: Alterar Avaliação */}
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditReview(rev)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-[#0B4F8A] hover:bg-blue-50 transition-colors cursor-pointer"
+                            title="Alterar avaliação"
+                            aria-label="Alterar avaliação"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Action: Excluir / Apagar Avaliação */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeletingReviewId(rev.id);
+                              if (isEditing) setEditingReviewId(null);
+                            }}
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="Excluir avaliação"
+                            aria-label="Excluir avaliação"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <span className="text-[10px] text-slate-400">{rev.date}</span>
-                    </div>
 
-                    <div className="flex items-center text-amber-400 text-xs mb-1">
-                      {'★'.repeat(rev.rating)}
-                      <span className="text-slate-300">{'★'.repeat(5 - rev.rating)}</span>
-                    </div>
+                      {/* Regular Rating Display or Inline Edit Form */}
+                      {isEditing ? (
+                        <div className="mt-2.5 p-3 bg-slate-50 border border-[#0B4F8A]/30 rounded-xl space-y-2.5 animate-fadeIn">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-700">Editar Nota:</span>
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                  type="button"
+                                  key={star}
+                                  onClick={() => setEditingReviewRating(star)}
+                                  className="p-0.5 text-base text-amber-400 hover:scale-125 transition-transform"
+                                >
+                                  {star <= editingReviewRating ? '★' : '☆'}
+                                </button>
+                              ))}
+                              <span className="text-xs font-bold text-amber-600 ml-1">
+                                ({editingReviewRating} estrelas)
+                              </span>
+                            </div>
+                          </div>
 
-                    <p className="text-xs text-slate-600 leading-relaxed">{rev.comment}</p>
-                  </div>
-                ))
+                          <ClearableInput
+                            value={editingReviewComment}
+                            onValueChange={setEditingReviewComment}
+                            placeholder="Edite seu comentário sobre a loja..."
+                            className="h-9 bg-white border border-slate-200 text-xs focus:border-[#0B4F8A]"
+                          />
+
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={handleCancelEditReview}
+                              className="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveEditReview(rev)}
+                              disabled={!editingReviewComment.trim()}
+                              className={`px-3 py-1 text-xs font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer ${
+                                editingReviewComment.trim()
+                                  ? 'bg-[#0B4F8A] hover:bg-[#083a66] text-white shadow-xs'
+                                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                              }`}
+                            >
+                              <Check className="w-3 h-3" />
+                              <span>Salvar Alteração</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center text-amber-400 text-xs">
+                            {'★'.repeat(rev.rating)}
+                            <span className="text-slate-300">{'★'.repeat(Math.max(0, 5 - rev.rating))}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed break-words">{rev.comment}</p>
+                        </>
+                      )}
+
+                      {/* Inline Delete Confirmation Alert */}
+                      {isDeleting && (
+                        <div className="mt-2.5 p-2.5 bg-rose-50 border border-rose-200 rounded-xl space-y-2 animate-fadeIn">
+                          <p className="text-[11px] text-rose-800 font-semibold flex items-center gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                            <span>Deseja realmente apagar esta avaliação?</span>
+                          </p>
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setDeletingReviewId(null)}
+                              className="px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 bg-white border border-slate-200 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteReviewAction(rev.id)}
+                              className="px-2.5 py-0.5 text-[11px] font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-md flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Sim, Excluir</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               ) : (
                 <p className="text-xs text-slate-400 italic">
                   Seja o primeiro a avaliar esta loja em Salvador!
