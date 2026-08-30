@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActiveTab, User } from '../types';
-import { Home, Compass, MapPin, Sparkles, MessageSquare, Heart, Store, User as UserIcon, Calendar, Map as MapIcon } from 'lucide-react';
+import { Home, Compass, MapPin, Sparkles, MessageSquare, Heart, Store, User as UserIcon, Calendar, Map as MapIcon, Navigation } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab?: ActiveTab;
@@ -69,29 +69,41 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           )}
         </button>
 
-        {/* 2. Mapa */}
+        {/* 2. Viajar GPS (Uber / 99 Style) */}
         <button
           onClick={() => {
-            setActiveTab('explore');
-            // Can scroll to map section
-            const el = document.getElementById('salvador-interactive-map');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
+            setActiveTab('viajar');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] ${
-            activeTab === 'explore'
-              ? 'text-slate-600'
+            activeTab === 'viajar'
+              ? 'text-[#0B4F8A]'
               : 'text-slate-500 hover:text-slate-800'
           }`}
-          aria-label="Mapa de Salvador"
+          aria-label="Viajar GPS"
         >
           <div className="relative">
-            <Compass
-              className="w-5 h-5 stroke-[1.75] text-[#0B3D91]"
+            <Navigation
+              className={`w-5 h-5 transition-transform ${
+                activeTab === 'viajar'
+                  ? 'text-[#0B4F8A] fill-[#0B4F8A] stroke-[2.5] scale-110'
+                  : 'text-slate-500 stroke-[1.75]'
+              }`}
             />
+            <span className="absolute -top-1 -right-2 bg-emerald-500 text-white text-[7px] font-black px-1 rounded-full">
+              GPS
+            </span>
           </div>
-          <span className="text-[10px] font-semibold text-slate-600 mt-1 leading-none tracking-tight">
-            Mapa
+          <span
+            className={`text-[10px] mt-1 leading-none tracking-tight ${
+              activeTab === 'viajar' ? 'font-black text-[#0B4F8A]' : 'font-semibold text-slate-500'
+            }`}
+          >
+            Viajar
           </span>
+          {activeTab === 'viajar' && (
+            <span className="w-1 h-1 rounded-full bg-[#0B4F8A] mt-0.5" />
+          )}
         </button>
 
         {/* 3. Ofertas */}

@@ -32,6 +32,7 @@ import {
 } from './data/mockData';
 import { INITIAL_EVENTS } from './data/eventsData';
 import { BonfimRibbon } from './components/BonfimRibbon';
+import { generateBaianoChatResponse } from './services/baianoAgentsEngine';
 
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
@@ -57,6 +58,7 @@ import { SalvadorLiveView } from './views/SalvadorLiveView';
 import { SalvoOfficialView } from './views/SalvoOfficialView';
 import { SalvoFePlansView } from './views/SalvoFePlansView';
 import { SalvoFeAdminDashboardView } from './views/SalvoFeAdminDashboardView';
+import { ViajarNavView } from './views/ViajarNavView';
 import { StreetViewExperience } from './components/StreetViewExperience';
 
 export default function App() {
@@ -787,41 +789,42 @@ export default function App() {
       })
     );
 
-    // Auto simulate store reply after 1.2s if sent by client
-    if (currentUser.role === 'client') {
-      setTimeout(() => {
-        const replies = [
-          'Olá! Obrigado pela mensagem! Estamos com atendimento a todo vapor aqui em Salvador. Como podemos te atender?',
-          'Opa, tudo bem? Sim, essa oferta está valendo hoje! Pode vir retirar no balcão ou pedir pelo WhatsApp.',
-          'Recebemos sua mensagem! Aceitamos Pix, cartões e dinheiro. Venha nos visitar aqui em Salvador!',
-        ];
-        const randomReply = replies[Math.floor(Math.random() * replies.length)];
-        const replyMsg: ChatMessage = {
-          id: `msg-reply-${Date.now()}`,
-          senderId: 'store-auto',
-          senderName: conv?.storeName || 'Loja Salvador',
-          senderRole: 'merchant',
-          receiverId: currentUser.id,
-          text: randomReply,
-          timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          read: true,
-        };
+    // Auto simulate store / Baiano client reply after 1.2s
+    setTimeout(() => {
+      const { replyText, agent } = generateBaianoChatResponse(text, {
+        storeName: conv?.storeName,
+      });
 
-        setConversations((prev) =>
-          prev.map((c) => {
-            if (c.id === conversationId) {
-              return {
-                ...c,
-                lastMessage: randomReply,
-                lastMessageTime: 'Agora',
-                messages: [...c.messages, replyMsg],
-              };
-            }
-            return c;
-          })
-        );
-      }, 1200);
-    }
+      const replySenderName =
+        currentUser.role === 'client'
+          ? conv?.storeName || `${agent.name} (${agent.neighborhood})`
+          : `${agent.name} (${agent.neighborhood})`;
+
+      const replyMsg: ChatMessage = {
+        id: `msg-reply-${Date.now()}`,
+        senderId: currentUser.role === 'client' ? 'store-auto' : agent.id,
+        senderName: replySenderName,
+        senderRole: currentUser.role === 'client' ? 'merchant' : 'client',
+        receiverId: currentUser.id,
+        text: replyText,
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        read: true,
+      };
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id === conversationId) {
+            return {
+              ...c,
+              lastMessage: replyText,
+              lastMessageTime: 'Agora',
+              messages: [...c.messages, replyMsg],
+            };
+          }
+          return c;
+        })
+      );
+    }, 1200);
   };
 
   // Add Review
@@ -1213,6 +1216,12 @@ export default function App() {
                 setCurrentTab('chat');
               }
             }}
+          />
+        ) : currentTab === 'viajar' ? (
+          <ViajarNavView
+            userLocation={userLocation}
+            onOpenChatWithStore={handleOpenChatWithStore}
+            onNavigateToTab={(tab) => setCurrentTab(tab as ActiveTab)}
           />
         ) : currentTab === 'offers' ? (
 

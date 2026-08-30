@@ -361,6 +361,7 @@ export interface ChatConversation {
 
 export type ActiveTab =
   | 'explore'
+  | 'viajar'
   | 'offers'
   | 'for_you'
   | 'events'

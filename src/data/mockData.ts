@@ -1,4 +1,5 @@
 import { Store, User, ChatConversation, SalvadorNeighborhood, StoreCategory, ModeratorProfile, ModerationAuditLog, Friendship, UserFollow, StoreFollow, StorePartnership, SocialNotification, NeighborhoodGuideInfo, NeighborhoodSpot } from '../types';
+import { BAIANO_AGENTS } from './baianoAgents';
 
 export const SALVADOR_NEIGHBORHOODS: string[] = [
   'Acupe',
@@ -893,6 +894,7 @@ export const INITIAL_USERS: User[] = [
     savedOfferIds: ['off-2'],
     createdAt: '2025-02-12',
   },
+  ...BAIANO_AGENTS,
 ];
 
 export const MOCK_USERS = INITIAL_USERS;

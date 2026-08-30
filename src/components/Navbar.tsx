@@ -18,6 +18,7 @@ import {
   Calendar,
   MapPin,
   Map as MapIcon,
+  Navigation,
   LogIn,
   Flame,
   Sun,
@@ -228,6 +229,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <Compass className="w-3 h-3 shrink-0" />
                 <span className="whitespace-nowrap">Mapa</span>
+              </button>
+
+              {/* 1.5 VIAJAR (Navegação GPS Profissional Estilo Uber / 99) */}
+              <button
+                onClick={() => setActiveTab('viajar')}
+                className={`px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all whitespace-nowrap select-none focus:outline-none focus:ring-1 focus:ring-[#0B3D91]/30 cursor-pointer ${
+                  activeTab === 'viajar'
+                    ? 'bg-gradient-to-r from-[#0B4F8A] to-[#083a66] text-[#FFC72C] shadow-2xs font-black ring-1 ring-[#FFC72C]/40'
+                    : 'text-[#0B4F8A] hover:bg-blue-50/90 font-bold bg-blue-50/50'
+                }`}
+                title="VIAJAR: Navegação GPS Profissional, Roteirização Offline e Assistente Inteligente de Salvador"
+              >
+                <Navigation className={`w-3 h-3 shrink-0 ${activeTab === 'viajar' ? 'text-[#FFC72C] fill-[#FFC72C]' : 'text-[#0B4F8A]'}`} />
+                <span className="whitespace-nowrap font-black">VIAJAR</span>
+                <span className="text-[8px] bg-emerald-500 text-white px-1 py-0 rounded font-black uppercase tracking-wider shadow-2xs">
+                  GPS
+                </span>
               </button>
 
               {/* 2. Explorar Bairros */}
@@ -922,6 +940,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Compass className="w-4 h-4 shrink-0" />
             <span>Mapa & Lojas de Salvador</span>
+          </button>
+
+          {/* VIAJAR GPS Módulo Mobile */}
+          <button
+            onClick={() => {
+              setActiveTab('viajar');
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl font-heading font-bold text-xs whitespace-nowrap ${
+              activeTab === 'viajar'
+                ? 'bg-[#0B4F8A] text-white shadow-xs'
+                : 'text-[#0B4F8A] bg-blue-50/70 hover:bg-blue-100/70'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <Navigation className={`w-4 h-4 shrink-0 ${activeTab === 'viajar' ? 'text-[#FFC72C] fill-[#FFC72C]' : 'text-[#0B4F8A]'}`} />
+              <span className="font-black">VIAJAR (Navegação GPS)</span>
+            </div>
+            <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500 text-white uppercase">
+              GPS Uber Style
+            </span>
           </button>
 
           {/* Explorar Bairros de Salvador */}

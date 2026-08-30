@@ -52,7 +52,18 @@ import {
   AlertTriangle,
   Ban,
   UserX,
+  Zap,
+  Radio,
+  Users2,
+  Activity,
 } from 'lucide-react';
+import { BAIANO_AGENTS, BaianoAgentProfile } from '../data/baianoAgents';
+import {
+  generateBaianoComment,
+  generateBaianoReplyToUser,
+  triggerAutonomousSocialAction,
+  BaianoLiveActivity,
+} from '../services/baianoAgentsEngine';
 
 export interface ForYouSocialViewProps {
   currentUser: User;
@@ -281,6 +292,15 @@ export const ForYouSocialView: React.FC<ForYouSocialViewProps> = ({
   const [blockedUsers, setBlockedUsers] = useState<BlockedUserInfo[]>(() => getBlockedUsers(currentUser.id));
   const [confirmBlockUser, setConfirmBlockUser] = useState<{ id: string; name: string; avatar?: string } | null>(null);
 
+  // Auto-advance feed states
+  const [autoAdvanceEnabled, setAutoAdvanceEnabled] = useState<boolean>(true);
+  const [autoAdvanceSpeed, setAutoAdvanceSpeed] = useState<'normal' | 'fast'>('normal');
+
+  // Baiano Client Agents active states (20 agents)
+  const [liveActivity, setLiveActivity] = useState<BaianoLiveActivity | null>(null);
+  const [isAgentsModalOpen, setIsAgentsModalOpen] = useState<boolean>(false);
+  const [agentReplyToast, setAgentReplyToast] = useState<{ agentName: string; text: string; neighborhood: string } | null>(null);
+
   useEffect(() => {
     setBlockedUsers(getBlockedUsers(currentUser.id));
   }, [currentUser.id]);
@@ -428,6 +448,59 @@ export const ForYouSocialView: React.FC<ForYouSocialViewProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeIndex, feedItems.length, scrollToIndex]);
+
+  // Handle automatic advance to the next item
+  const handleAdvanceNext = useCallback(() => {
+    if (feedItems.length === 0) return;
+    const next = (activeIndex + 1) % feedItems.length;
+    setActiveIndex(next);
+    scrollToIndex(next);
+  }, [activeIndex, feedItems.length, scrollToIndex]);
+
+  // Autonomous Baiano Client Agents Engine (20 human-like agents interacting)
+  useEffect(() => {
+    if (feedItems.length === 0) return;
+
+    // Trigger an autonomous Baiano social activity every 13 seconds
+    const interval = setInterval(() => {
+      const activity = triggerAutonomousSocialAction(feedItems);
+      if (activity) {
+        setLiveActivity(activity);
+
+        // Mutate local state organically so counts and comments are real-time
+        if (activity.type === 'like') {
+          setLikeCountMap((prev) => ({
+            ...prev,
+            [activity.targetId]: (prev[activity.targetId] ?? 0) + 1,
+          }));
+        } else if (activity.type === 'want') {
+          setWantCountMap((prev) => ({
+            ...prev,
+            [activity.targetId]: (prev[activity.targetId] ?? 0) + 1,
+          }));
+        } else if (activity.type === 'comment') {
+          const matchingItem = feedItems.find((f) => f.id === activity.targetId);
+          if (matchingItem) {
+            const { comment } = generateBaianoComment(matchingItem);
+            setCommentsMap((prev) => {
+              const currentList = prev[activity.targetId] || matchingItem.comments;
+              return {
+                ...prev,
+                [activity.targetId]: [comment, ...currentList],
+              };
+            });
+          }
+        }
+
+        // Hide floating activity after 4.5s
+        setTimeout(() => {
+          setLiveActivity((current) => (current?.id === activity.id ? null : current));
+        }, 4500);
+      }
+    }, 13000);
+
+    return () => clearInterval(interval);
+  }, [feedItems]);
 
   // Intersection observer to track active slide
   useEffect(() => {
@@ -623,8 +696,40 @@ export const ForYouSocialView: React.FC<ForYouSocialViewProps> = ({
       };
     });
 
+    const userCommentSubmitted = newCommentText.trim();
+    const targetItemForReply = activeCommentsItem;
+
     setNewCommentText('');
     showCommentToast('Comentário publicado!', 'success');
+
+    // Simulate authentic Baiano agent replying to user's comment
+    setTimeout(() => {
+      if (targetItemForReply) {
+        const { replyComment, agent } = generateBaianoReplyToUser(
+          userCommentSubmitted,
+          currentUser.name || 'amigo',
+          targetItemForReply
+        );
+
+        setCommentsMap((prev) => {
+          const currentList = prev[targetItemForReply.id] || targetItemForReply.comments;
+          return {
+            ...prev,
+            [targetItemForReply.id]: [replyComment, ...currentList],
+          };
+        });
+
+        setAgentReplyToast({
+          agentName: agent.name,
+          neighborhood: agent.neighborhood,
+          text: replyComment.text,
+        });
+
+        setTimeout(() => {
+          setAgentReplyToast(null);
+        }, 4000);
+      }
+    }, 2000);
   };
 
   // Handle Merchant Post Publish simulation
@@ -1016,24 +1121,82 @@ export const ForYouSocialView: React.FC<ForYouSocialViewProps> = ({
                   })}
                 </div>
 
-                {/* Sound & Mode indicator */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-md border border-white/15">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#C1502E] animate-pulse" />
-                    <span className="text-[10px] font-heading font-black text-white uppercase tracking-wider">
-                      Para Mim • Salvador
-                    </span>
+                {/* Sound, Auto-Pass & Baiano Agents indicator */}
+                <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/15">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#C1502E] animate-pulse" />
+                      <span className="text-[10px] font-heading font-black text-white uppercase tracking-wider">
+                        Para Mim
+                      </span>
+                    </div>
+
+                    {/* Auto-Advance Mode Toggle */}
+                    <button
+                      onClick={() => setAutoAdvanceEnabled((prev) => !prev)}
+                      className={`px-2 py-0.5 rounded-full backdrop-blur-md border text-[10px] font-heading font-black flex items-center gap-1 transition-all cursor-pointer ${
+                        autoAdvanceEnabled
+                          ? 'bg-amber-400/30 text-amber-300 border-amber-300/50 shadow-xs'
+                          : 'bg-black/50 text-white/70 border-white/20'
+                      }`}
+                      title={autoAdvanceEnabled ? 'Pausar avanço automático' : 'Ativar passar automaticamente'}
+                    >
+                      <Zap className={`w-3 h-3 ${autoAdvanceEnabled ? 'fill-amber-300 text-amber-300 animate-pulse' : 'text-white/60'}`} />
+                      <span>{autoAdvanceEnabled ? 'Auto ON' : 'Auto OFF'}</span>
+                    </button>
                   </div>
 
-                  <button
-                    onClick={() => setIsMuted((prev) => !prev)}
-                    className="w-7 h-7 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition-transform active:scale-90 cursor-pointer"
-                    title={isMuted ? 'Ativar som' : 'Desativar som'}
-                  >
-                    {isMuted ? <VolumeX className="w-3.5 h-3.5 text-white/80" /> : <Volume2 className="w-3.5 h-3.5 text-white" />}
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {/* Baiano Active Agents modal trigger */}
+                    <button
+                      onClick={() => setIsAgentsModalOpen(true)}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-950/70 backdrop-blur-md border border-emerald-400/50 text-emerald-300 text-[10px] font-heading font-black hover:bg-emerald-900/90 transition-all cursor-pointer"
+                      title="Ver os 20 Clientes Baianos interagindo ao vivo no SALVÔ"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      <Users2 className="w-3 h-3" />
+                      <span>20 Baianos</span>
+                    </button>
+
+                    <button
+                      onClick={() => setIsMuted((prev) => !prev)}
+                      className="w-7 h-7 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md border border-white/20 transition-transform active:scale-90 cursor-pointer"
+                      title={isMuted ? 'Ativar som' : 'Desativar som'}
+                    >
+                      {isMuted ? <VolumeX className="w-3.5 h-3.5 text-white/80" /> : <Volume2 className="w-3.5 h-3.5 text-white" />}
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {/* Floating Baiano Live Activity Real-time Notification Banner */}
+              {liveActivity && (
+                <div className="absolute top-13 inset-x-3 z-35 bg-slate-950/90 backdrop-blur-md border border-amber-400/40 rounded-2xl p-2.5 flex items-center gap-2.5 text-white shadow-2xl animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="relative shrink-0">
+                    <img
+                      src={liveActivity.agent.avatar}
+                      alt={liveActivity.agent.name}
+                      className="w-8 h-8 rounded-full object-cover border-2 border-amber-400 shadow-md"
+                    />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#1F6E43] text-white flex items-center justify-center text-[8px] font-black border border-white">
+                      ✓
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[11px] font-heading font-black text-amber-300 truncate">
+                        {liveActivity.agent.name}
+                      </span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-white/20 text-slate-200 shrink-0 font-medium">
+                        📍 {liveActivity.agent.neighborhood}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-white/90 truncate mt-0.5">
+                      {liveActivity.message}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Vertical Snap Scroll Container */}
               <div
@@ -1071,6 +1234,8 @@ export const ForYouSocialView: React.FC<ForYouSocialViewProps> = ({
                             isActive={isActive}
                             isPlaying={isPlaying}
                             isMuted={isMuted}
+                            autoAdvance={autoAdvanceEnabled}
+                            onComplete={handleAdvanceNext}
                             onProgress={(prog) => {
                               setProgressMap((prev) => ({ ...prev, [idx]: prog }));
                             }}
@@ -1080,6 +1245,9 @@ export const ForYouSocialView: React.FC<ForYouSocialViewProps> = ({
                             imageUrl={item.mediaUrl}
                             isActive={isActive}
                             isPlaying={isPlaying}
+                            autoAdvance={autoAdvanceEnabled}
+                            speed={autoAdvanceSpeed}
+                            onComplete={handleAdvanceNext}
                             onProgress={(prog) => {
                               setProgressMap((prev) => ({ ...prev, [idx]: prog }));
                             }}
@@ -2051,6 +2219,129 @@ export const ForYouSocialView: React.FC<ForYouSocialViewProps> = ({
         </div>
       )}
 
+      {/* Baiano Agent Reply Toast */}
+      {agentReplyToast && (
+        <div className="fixed top-18 right-4 sm:right-8 z-60 max-w-sm bg-[#0B3D91] text-white p-3.5 rounded-2xl border border-amber-300/40 shadow-2xl backdrop-blur-md flex items-start gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className="w-8 h-8 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center font-black text-xs shrink-0 shadow-md">
+            💬
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-heading font-black text-amber-300">
+                {agentReplyToast.agentName}
+              </span>
+              <span className="text-[9px] text-sky-200 font-medium">📍 {agentReplyToast.neighborhood}</span>
+            </div>
+            <p className="text-xs text-white/95 mt-1 leading-snug font-normal">
+              {agentReplyToast.text}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* 20 Baiano Agents Community Modal */}
+      {isAgentsModalOpen && (
+        <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-200 bg-gradient-to-r from-[#0B3D91] via-[#1E3A5F] to-[#0B3D91] text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-900 flex items-center justify-center font-black text-lg shadow-md">
+                  🌴
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-heading font-black text-white flex items-center gap-2">
+                    Clientes Baianos SALVÔ (20 Agentes Ativos)
+                  </h3>
+                  <p className="text-xs text-sky-200 font-normal">
+                    Moradores de Salvador reagindo, curtindo, comentando e interagindo em tempo real.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAgentsModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Info Banner */}
+            <div className="bg-amber-50 px-4 py-2.5 border-b border-amber-200/80 flex items-center justify-between text-xs text-amber-900">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#1F6E43] animate-ping shrink-0" />
+                <span className="font-semibold">
+                  Engajamento Orgânico: Comentam, curtem, compartilham e conversam — <em>só não realizam compras</em>.
+                </span>
+              </div>
+              <span className="font-bold text-[#0B3D91] bg-white px-2 py-0.5 rounded-full border border-amber-300 text-[11px] shrink-0 hidden sm:inline">
+                20/20 Online
+              </span>
+            </div>
+
+            {/* Modal Body: Grid of 20 Baiano Agents */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {BAIANO_AGENTS.map((agent) => (
+                <div
+                  key={agent.id}
+                  className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 hover:border-[#0B3D91]/40 hover:bg-slate-100/80 transition-all flex items-start gap-3.5 group"
+                >
+                  <div className="relative shrink-0">
+                    <img
+                      src={agent.avatar}
+                      alt={agent.name}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-slate-300 group-hover:border-[#0B3D91] shadow-xs"
+                    />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#1F6E43] border-2 border-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <h4 className="text-xs font-heading font-black text-slate-900 truncate group-hover:text-[#0B3D91]">
+                        {agent.name}
+                      </h4>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-[#0B3D91] font-bold border border-blue-200/60 shrink-0">
+                        {agent.neighborhood}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 line-clamp-2 mt-1 leading-snug">
+                      {agent.bio}
+                    </p>
+                    <div className="mt-2 pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                      <span className="text-[10px] text-amber-700 font-semibold italic truncate max-w-[170px]">
+                        "{agent.catchphrases[0] || 'Brocou!'}"
+                      </span>
+                      <button
+                        onClick={() => {
+                          setIsAgentsModalOpen(false);
+                          onNavigateTab('chat');
+                        }}
+                        className="px-2 py-1 rounded-lg bg-[#0B3D91] hover:bg-[#082e6d] text-white text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <MessageSquare className="w-2.5 h-2.5" />
+                        <span>Chat</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3.5 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
+              <span className="text-xs text-slate-500 font-medium">
+                SALVÔ SSA • Rede Social do Comércio Local
+              </span>
+              <button
+                onClick={() => setIsAgentsModalOpen(false)}
+                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Interest Confirmation Toast */}
       {interestToast && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-60 px-5 py-3 rounded-2xl bg-slate-900/95 text-white font-bold text-xs shadow-2xl border border-white/20 backdrop-blur-md flex items-center gap-2 animate-bounce">
@@ -2069,7 +2360,9 @@ interface FeedVideoPlayerProps {
   isActive: boolean;
   isPlaying: boolean;
   isMuted: boolean;
+  autoAdvance?: boolean;
   onProgress: (percent: number) => void;
+  onComplete?: () => void;
 }
 
 const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
@@ -2078,11 +2371,15 @@ const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
   isActive,
   isPlaying,
   isMuted,
+  autoAdvance = true,
   onProgress,
+  onComplete,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const completedFiredRef = useRef<boolean>(false);
 
   useEffect(() => {
+    completedFiredRef.current = false;
     const video = videoRef.current;
     if (!video) return;
 
@@ -2107,6 +2404,21 @@ const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
     if (!video || !video.duration) return;
     const percent = (video.currentTime / video.duration) * 100;
     onProgress(percent);
+
+    // Auto advance trigger when video reaches completion
+    if (autoAdvance && onComplete && !completedFiredRef.current) {
+      if (video.currentTime >= video.duration - 0.35 || percent >= 98.5) {
+        completedFiredRef.current = true;
+        onComplete();
+      }
+    }
+  };
+
+  const handleEnded = () => {
+    if (autoAdvance && onComplete && !completedFiredRef.current) {
+      completedFiredRef.current = true;
+      onComplete();
+    }
   };
 
   return (
@@ -2115,10 +2427,11 @@ const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
       src={videoUrl}
       poster={posterUrl}
       playsInline
-      loop
+      loop={!autoAdvance}
       muted={isMuted}
       preload="auto"
       onTimeUpdate={handleTimeUpdate}
+      onEnded={handleEnded}
       className="w-full h-full object-cover"
     />
   );
@@ -2129,19 +2442,25 @@ interface FeedImagePlayerProps {
   imageUrl: string;
   isActive: boolean;
   isPlaying: boolean;
+  autoAdvance?: boolean;
+  speed?: 'normal' | 'fast';
   onProgress: (percent: number) => void;
+  onComplete?: () => void;
 }
 
 const FeedImagePlayer: React.FC<FeedImagePlayerProps> = ({
   imageUrl,
   isActive,
   isPlaying,
+  autoAdvance = true,
+  speed = 'normal',
   onProgress,
+  onComplete,
 }) => {
   useEffect(() => {
     if (!isActive || !isPlaying) return;
 
-    const DURATION = 6000;
+    const DURATION = speed === 'fast' ? 4000 : 6500;
     const INTERVAL = 100;
     let elapsed = 0;
 
@@ -2149,13 +2468,18 @@ const FeedImagePlayer: React.FC<FeedImagePlayerProps> = ({
       elapsed += INTERVAL;
       const pct = Math.min((elapsed / DURATION) * 100, 100);
       onProgress(pct);
+
       if (elapsed >= DURATION) {
-        elapsed = 0;
+        if (autoAdvance && onComplete) {
+          onComplete();
+        } else {
+          elapsed = 0;
+        }
       }
     }, INTERVAL);
 
     return () => clearInterval(timer);
-  }, [isActive, isPlaying, onProgress]);
+  }, [isActive, isPlaying, autoAdvance, speed, onProgress, onComplete]);
 
   return (
     <img
