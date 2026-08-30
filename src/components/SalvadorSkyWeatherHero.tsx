@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { detectSalvadorNeighborhood } from '../utils/geolocation';
+import { SALVADOR_NEIGHBORHOOD_GEO_MAP } from '../utils/salvadorGeoDatabase';
 import {
   Sun,
   Moon,
@@ -189,23 +191,11 @@ export const SalvadorSkyWeatherHero: React.FC<SalvadorSkyWeatherHeroProps> = ({
   };
 
   const fallbackSalvadorGps = (lat: number, lng: number, timeNow: string) => {
-    // Estimativa de bairro em Salvador baseado nas coordenadas
-    let neighborhood = 'Barra';
-    let road = 'Av. Oceânica';
-
-    if (lat > -12.975 && lng > -38.48) {
-      neighborhood = 'Pituba';
-      road = 'Av. Manoel Dias da Silva';
-    } else if (lat < -12.99 && lng < -38.51) {
-      neighborhood = 'Rio Vermelho';
-      road = 'Rua da Paciência';
-    } else if (lat < -12.96 && lng > -38.40) {
-      neighborhood = 'Itapuã';
-      road = 'Rua da Música';
-    } else if (lat > -12.98 && lng < -38.50) {
-      neighborhood = 'Pelourinho';
-      road = 'Largo do Pelourinho';
-    }
+    // Estimativa precisa de bairro em Salvador baseado nas coordenadas oficiais
+    const detected = detectSalvadorNeighborhood(lat, lng);
+    const neighborhood = detected.neighborhood;
+    const geoInfo = SALVADOR_NEIGHBORHOOD_GEO_MAP[neighborhood];
+    const road = geoInfo?.keyStreets?.[0] || 'Via Principal';
 
     setGpsData({
       address: `${road} - ${neighborhood}`,

@@ -11,9 +11,11 @@ import {
   Navigation,
   Flame,
   Store as StoreIcon,
+  Footprints,
 } from 'lucide-react';
 import { STORE_CATEGORIES } from '../data/mockData';
 import { getCategoryIcon } from '../utils/categoryIcons';
+import { getDistanceInMeters, formatDistance, formatTravelTime } from '../utils/geolocation';
 
 interface StoreCardProps {
   store: Store;
@@ -22,6 +24,7 @@ interface StoreCardProps {
   onSelectStore: (store: Store) => void;
   onOpenChat: (store: Store) => void;
   onOpenStreetView?: (store: Store) => void;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 export const StoreCard: React.FC<StoreCardProps> = ({
@@ -31,15 +34,33 @@ export const StoreCard: React.FC<StoreCardProps> = ({
   onSelectStore,
   onOpenChat,
   onOpenStreetView,
+  userLocation,
 }) => {
   const categoryInfo = STORE_CATEGORIES.find((c) => c.name === store.category);
   const hasActiveOffers = store.offers && store.offers.length > 0;
   const activeOffer = hasActiveOffers ? store.offers[0] : null;
 
-  const googleMapsUrl =
-    store.googleMapsUrl ||
-    store.mapLink ||
-    `https://www.google.com/maps/dir/?api=1&destination=${store.coordinates.lat},${store.coordinates.lng}`;
+  // Real-time GPS distance calculation
+  const distanceInMeters = userLocation
+    ? getDistanceInMeters(
+        userLocation.lat,
+        userLocation.lng,
+        store.coordinates.lat,
+        store.coordinates.lng
+      )
+    : store.distanceKm !== undefined
+    ? store.distanceKm * 1000
+    : null;
+
+  const formattedDistance = distanceInMeters !== null ? formatDistance(distanceInMeters) : null;
+  const travelTimeWalk = distanceInMeters !== null && distanceInMeters < 3000 ? formatTravelTime(distanceInMeters, 'walking') : null;
+  const travelTimeDrive = distanceInMeters !== null && distanceInMeters >= 3000 ? formatTravelTime(distanceInMeters, 'driving') : null;
+
+  const googleMapsUrl = userLocation
+    ? `https://www.google.com/maps/dir/?api=1&origin=${userLocation.lat},${userLocation.lng}&destination=${store.coordinates.lat},${store.coordinates.lng}&travelmode=driving`
+    : store.googleMapsUrl ||
+      store.mapLink ||
+      `https://www.google.com/maps/dir/?api=1&destination=${store.coordinates.lat},${store.coordinates.lng}`;
 
   return (
     <div
@@ -98,14 +119,17 @@ export const StoreCard: React.FC<StoreCardProps> = ({
         </div>
 
         {/* Bottom Neighborhood & Distance Over Image */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white text-xs font-bold z-10">
-          <span className="flex items-center gap-1 drop-shadow-md">
-            <MapPin className="w-3.5 h-3.5 text-[#FFC72C]" />
-            {store.neighborhood}
+        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white text-xs font-bold z-10 gap-2">
+          <span className="flex items-center gap-1 drop-shadow-md truncate">
+            <MapPin className="w-3.5 h-3.5 text-[#FFC72C] shrink-0" />
+            <span className="truncate">{store.neighborhood}</span>
           </span>
-          {store.distanceKm !== undefined && (
-            <span className="bg-black/50 px-2 py-0.5 rounded-lg backdrop-blur-xs text-[11px]">
-              a {store.distanceKm} km
+          {formattedDistance && (
+            <span className="bg-black/60 px-2 py-0.5 rounded-lg backdrop-blur-xs text-[11px] whitespace-nowrap shrink-0 flex items-center gap-1 border border-white/10">
+              <Navigation className="w-2.5 h-2.5 text-[#FFC72C]" />
+              <span>a {formattedDistance}</span>
+              {travelTimeWalk && <span className="text-amber-200 text-[10px]">({travelTimeWalk})</span>}
+              {travelTimeDrive && <span className="text-sky-200 text-[10px]">({travelTimeDrive})</span>}
             </span>
           )}
         </div>

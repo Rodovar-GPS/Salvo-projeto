@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
-import { Store, StoreCategory, SalvadorNeighborhood, TheftIncident } from '../types';
+import React, { useState, useRef, useMemo } from 'react';
+import { Store, StoreCategory, SalvadorNeighborhood } from '../types';
 import { STORE_CATEGORIES, SALVADOR_NEIGHBORHOODS } from '../data/mockData';
 import { isValidPublicStore, filterValidPublicStores } from '../utils/storeValidation';
+import { getDistanceInMeters, detectSalvadorNeighborhood } from '../utils/geolocation';
 import { InteractiveMap } from '../components/InteractiveMap';
 import { HeroLiveMap } from '../components/HeroLiveMap';
 import { StoreCard } from '../components/StoreCard';
@@ -9,6 +10,7 @@ import { NeighborhoodGuideModal } from '../components/NeighborhoodGuideModal';
 import { UsageGuideModal } from '../components/UsageGuideModal';
 import { CategoryFilterBar } from '../components/CategoryFilterBar';
 import { ClearableInput } from '../components/ClearableInput';
+import { SalvoFeAdBanner } from '../components/SalvoFeAdBanner';
 import {
   Search,
   Map as MapIcon,
@@ -28,6 +30,7 @@ import {
   Star,
   ChevronRight,
   ShieldCheck,
+  Crosshair,
 } from 'lucide-react';
 
 interface HomeExploreViewProps {
@@ -43,15 +46,14 @@ interface HomeExploreViewProps {
   setSelectedNeighborhood: (n: SalvadorNeighborhood | 'Todos os Bairros') => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
-  userLocation: { lat: number; lng: number } | null;
+  userLocation: { lat: number; lng: number; accuracy?: number; neighborhood?: string; isManual?: boolean } | null;
   onUseLocation: () => void;
+  onSetManualNeighborhood?: (neighborhoodName: string) => void;
   isLocating: boolean;
   onOpenAuth?: () => void;
   onOpenChatDemo?: () => void;
   onOpenOffers?: () => void;
   onOpenNeighborhoodGuide?: () => void;
-  theftIncidents?: TheftIncident[];
-  onSubmitTheftIncident?: (newIncident: Omit<TheftIncident, 'id' | 'createdAt' | 'status' | 'verifiedByAdmin'>) => void;
 }
 
 export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
@@ -69,22 +71,31 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
   setSearchQuery,
   userLocation,
   onUseLocation,
+  onSetManualNeighborhood,
   isLocating,
   onOpenAuth,
   onOpenChatDemo,
   onOpenOffers,
   onOpenNeighborhoodGuide,
-  theftIncidents,
-  onSubmitTheftIncident,
 }) => {
 
   // View mode: 'map' | 'list'
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
-  const [onlyOffers, setOnlyOffers] = useState(false);
-  const [onlyOpen, setOnlyOpen] = useState(false);
+  const [onlyOffers, setOnlyOffers] = useState(true);
+  const [onlyOpen, setOnlyOpen] = useState(true);
+  const [proximityRadius, setProximityRadius] = useState<number | null>(null);
+  const [sortByDistance, setSortByDistance] = useState<boolean>(false);
   const [showNeighborhoodGuide, setShowNeighborhoodGuide] = useState(false);
   const [showUsageGuide, setShowUsageGuide] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Detected neighborhood from user GPS coordinates or explicit manual selection
+  const detectedGpsNeighborhood = useMemo(() => {
+    if (!userLocation) return undefined;
+    if (userLocation.neighborhood) return userLocation.neighborhood;
+    const res = detectSalvadorNeighborhood(userLocation.lat, userLocation.lng);
+    return res.neighborhood;
+  }, [userLocation]);
 
   const handleOpenNeighborhoodGuide = () => {
     if (onOpenNeighborhoodGuide) {
@@ -94,47 +105,93 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
     }
   };
 
-  // Filter logic (strict validation against test/placeholder stores)
-  const filteredStores = stores.filter((store) => {
-    // Validate store quality for public listing
-    if (!isValidPublicStore(store)) return false;
+  // Filter & sorting logic (strict validation against test/placeholder stores + real-time GPS)
+  const filteredStores = useMemo(() => {
+    let list = stores.filter((store) => {
+      // Validate store quality for public listing
+      if (!isValidPublicStore(store)) return false;
 
-    // Search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchesName = store.name.toLowerCase().includes(q);
-      const matchesCategory = store.category.toLowerCase().includes(q);
-      const matchesNeighborhood = store.neighborhood.toLowerCase().includes(q);
-      const matchesDesc = store.description.toLowerCase().includes(q);
-      const matchesOffer = store.offers.some((o) => o.title.toLowerCase().includes(q));
-      if (!matchesName && !matchesCategory && !matchesNeighborhood && !matchesDesc && !matchesOffer) {
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = store.name.toLowerCase().includes(q);
+        const matchesCategory = store.category.toLowerCase().includes(q);
+        const matchesNeighborhood = store.neighborhood.toLowerCase().includes(q);
+        const matchesDesc = store.description.toLowerCase().includes(q);
+        const matchesOffer = store.offers?.some((o) => o.title.toLowerCase().includes(q));
+        if (!matchesName && !matchesCategory && !matchesNeighborhood && !matchesDesc && !matchesOffer) {
+          return false;
+        }
+      }
+
+      // Category
+      if (selectedCategory !== 'Todas' && store.category !== selectedCategory) {
         return false;
       }
+
+      // Neighborhood
+      if (
+        selectedNeighborhood !== 'Todos os Bairros' &&
+        store.neighborhood !== selectedNeighborhood
+      ) {
+        return false;
+      }
+
+      // Filters
+      if (onlyOffers && (!store.offers || store.offers.length === 0)) {
+        return false;
+      }
+      if (onlyOpen && !store.isOpenNow) {
+        return false;
+      }
+
+      // Proximity Radius filter (GPS)
+      if (proximityRadius !== null && userLocation) {
+        const dist = getDistanceInMeters(
+          userLocation.lat,
+          userLocation.lng,
+          store.coordinates.lat,
+          store.coordinates.lng
+        );
+        if (dist > proximityRadius) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Sorting by GPS distance if requested or when proximity radius is active
+    if ((sortByDistance || proximityRadius !== null) && userLocation) {
+      list = [...list].sort((a, b) => {
+        const distA = getDistanceInMeters(
+          userLocation.lat,
+          userLocation.lng,
+          a.coordinates.lat,
+          a.coordinates.lng
+        );
+        const distB = getDistanceInMeters(
+          userLocation.lat,
+          userLocation.lng,
+          b.coordinates.lat,
+          b.coordinates.lng
+        );
+        return distA - distB;
+      });
     }
 
-    // Category
-    if (selectedCategory !== 'Todas' && store.category !== selectedCategory) {
-      return false;
-    }
-
-    // Neighborhood
-    if (
-      selectedNeighborhood !== 'Todos os Bairros' &&
-      store.neighborhood !== selectedNeighborhood
-    ) {
-      return false;
-    }
-
-    // Filters
-    if (onlyOffers && (!store.offers || store.offers.length === 0)) {
-      return false;
-    }
-    if (onlyOpen && !store.isOpenNow) {
-      return false;
-    }
-
-    return true;
-  });
+    return list;
+  }, [
+    stores,
+    searchQuery,
+    selectedCategory,
+    selectedNeighborhood,
+    onlyOffers,
+    onlyOpen,
+    proximityRadius,
+    sortByDistance,
+    userLocation,
+  ]);
 
   const totalOffersCount = stores.reduce((acc, s) => acc + (s.offers?.length || 0), 0);
 
@@ -170,67 +227,23 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
       {/* =========================================================
           HERO SECTION (DESKTOP: 2 COLUMNS | MOBILE: SINGLE COLUMN)
       ========================================================= */}
-      <section className="bg-gradient-to-br from-[#0B3D91] via-[#082C69] to-[#051C44] rounded-3xl p-5 sm:p-8 lg:p-10 text-white shadow-xl relative overflow-hidden border border-blue-900/50">
-        {/* Padrão Sutil de Azulejo Português Baiano (~8% opacidade) */}
-        <svg
-          className="absolute inset-0 w-full h-full opacity-[0.08] pointer-events-none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            <pattern
-              id="azulejo-pattern-hero"
-              width="56"
-              height="56"
-              patternUnits="userSpaceOnUse"
-            >
-              <path
-                d="M28 0 L56 28 L28 56 L0 28 Z"
-                fill="none"
-                stroke="#FFFFFF"
-                strokeWidth="1.2"
-              />
-              <circle cx="28" cy="28" r="9" fill="none" stroke="#FFFFFF" strokeWidth="1" />
-              <path
-                d="M28 8 L28 48 M8 28 L48 28"
-                stroke="#FFFFFF"
-                strokeWidth="0.8"
-              />
-              <circle cx="0" cy="0" r="4" fill="none" stroke="#FFFFFF" strokeWidth="0.8" />
-              <circle cx="56" cy="0" r="4" fill="none" stroke="#FFFFFF" strokeWidth="0.8" />
-              <circle cx="0" cy="56" r="4" fill="none" stroke="#FFFFFF" strokeWidth="0.8" />
-              <circle cx="56" cy="56" r="4" fill="none" stroke="#FFFFFF" strokeWidth="0.8" />
-              <path
-                d="M0 28 C10 22 18 22 28 28 C18 34 10 34 0 28 Z"
-                fill="none"
-                stroke="#FFFFFF"
-                strokeWidth="0.6"
-              />
-              <path
-                d="M56 28 C46 22 38 22 28 28 C38 34 46 34 56 28 Z"
-                fill="none"
-                stroke="#FFFFFF"
-                strokeWidth="0.6"
-              />
-              <path
-                d="M28 0 C22 10 22 18 28 28 C34 18 34 10 28 0 Z"
-                fill="none"
-                stroke="#FFFFFF"
-                strokeWidth="0.6"
-              />
-              <path
-                d="M28 56 C22 46 22 38 28 28 C34 38 34 46 28 56 Z"
-                fill="none"
-                stroke="#FFFFFF"
-                strokeWidth="0.6"
-              />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#azulejo-pattern-hero)" />
-        </svg>
+      <section className="rounded-3xl p-5 sm:p-8 lg:p-10 text-white shadow-2xl relative overflow-hidden border border-blue-800/40 bg-slate-950">
+        {/* Imagem de Fundo em Alta Definição */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="https://iili.io/CpQGyhu.png"
+            alt="Salvador Panorama"
+            className="w-full h-full object-cover object-center scale-[1.02] transform transition-transform duration-700"
+            referrerPolicy="no-referrer"
+          />
+          {/* Camada de Gradiente / Overlay para Máxima Legibilidade dos Textos */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#061C44]/90 via-[#0B3D91]/75 to-[#082457]/80 backdrop-brightness-[0.85]" />
+          <div className="absolute inset-0 bg-radial from-transparent via-black/20 to-black/50" />
+        </div>
 
         {/* Ambient atmospheric glows */}
-        <div className="absolute -right-16 -bottom-16 w-80 h-80 bg-[#FFC72C]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-1/3 -top-20 w-64 h-64 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -right-16 -bottom-16 w-80 h-80 bg-[#FFC72C]/15 rounded-full blur-3xl pointer-events-none z-1" />
+        <div className="absolute left-1/3 -top-20 w-64 h-64 bg-sky-400/15 rounded-full blur-2xl pointer-events-none z-1" />
 
         {/* =========================================================
             DESKTOP LAYOUT (2 COLUMNS: LEFT CONTENT + RIGHT REAL PRODUCT PREVIEW)
@@ -239,23 +252,24 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
           {/* ESQUERDA: Informações e Ações Principais */}
           <div className="lg:col-span-7 space-y-5">
             {/* Tag de Localização */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-sky-100 border border-white/20 shadow-2xs">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-white/10 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider text-[#FFC72C] border border-white/20 shadow-2xs">
               <MapPin className="w-3.5 h-3.5 text-[#FFC72C] shrink-0" />
-              <span>SALVADOR • BAHIA</span>
+              <span>SALVADOR NA PALMA DA MÃO</span>
             </div>
 
             {/* H1 Principal com Tipografia de Destaque do Design System (Fraunces) */}
-            <h1 className="text-4xl xl:text-5xl font-display font-black tracking-tight leading-[1.15] text-white">
-              SALVÔ — O Guia Oficial de Salvador
+            <h1 className="text-4xl xl:text-5xl font-display font-black tracking-tight leading-[1.15] text-white drop-shadow-md">
+              SALVÔ — Seu Guia Diário
             </h1>
 
             {/* Textos Descritivos com Alta Legibilidade */}
             <div className="space-y-1.5 text-sky-100 text-base leading-relaxed max-w-xl">
-              <p className="font-semibold text-white/95 text-lg">
-                Encontre tudo de Salvador em um só lugar.
+              <p className="font-bold text-white text-lg drop-shadow-sm">
+                Descubra o comércio local, encontre ofertas, conecte-se com pessoas e acompanhe a cidade em tempo real.
               </p>
-              <p className="text-sky-100/90 text-sm leading-relaxed">
-                Descubra o comércio local, ofertas exclusivas e serviços perto de você com a energia única e o axé da Bahia.
+              <p className="text-amber-200 font-semibold text-sm leading-relaxed drop-shadow-xs flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-[#FFC72C] shrink-0" />
+                <span>Comércio, conexão e Salvador. Tudo em um só lugar.</span>
               </p>
             </div>
 
@@ -397,20 +411,26 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
         ========================================================= */}
         <div className="lg:hidden space-y-4 relative z-10">
           {/* 1. Tag de Localização */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-bold uppercase tracking-wider text-sky-100 border border-white/20">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[11px] font-bold uppercase tracking-wider text-[#FFC72C] border border-white/20">
             <MapPin className="w-3.5 h-3.5 text-[#FFC72C] shrink-0" />
-            <span>SALVADOR • BAHIA</span>
+            <span>SALVADOR NA PALMA DA MÃO</span>
           </div>
 
           {/* 2. Headline H1 com Tipografia Fraunces */}
-          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight leading-tight text-white">
-            Encontre o melhor de Salvador.
+          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight leading-tight text-white drop-shadow-md">
+            SALVÔ — Seu Guia Diário
           </h1>
 
           {/* 3. Texto */}
-          <p className="text-sky-100 text-xs sm:text-sm font-medium leading-relaxed">
-            Descubra lojas, ofertas e serviços perto de você.
+          <p className="text-slate-100 text-xs sm:text-sm font-medium leading-relaxed drop-shadow-xs">
+            Descubra o comércio local, encontre ofertas, conecte-se com pessoas e acompanhe a cidade em tempo real.
           </p>
+
+          {/* Tagline Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FFC72C]/20 border border-[#FFC72C]/40 rounded-full text-[11px] font-bold text-[#FFC72C]">
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>Comércio, conexão e Salvador. Tudo em um só lugar.</span>
+          </div>
 
           {/* 4. Campo de Busca com Destaque */}
           <div className="w-full relative pt-1">
@@ -529,6 +549,16 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
           stores={stores}
           filteredCount={filteredStores.length}
           onOpenNeighborhoodGuide={handleOpenNeighborhoodGuide}
+          userLocation={userLocation}
+          onUseLocation={onUseLocation}
+          onSetManualNeighborhood={onSetManualNeighborhood}
+          isLocating={isLocating}
+          detectedNeighborhood={detectedGpsNeighborhood}
+          gpsAccuracy={userLocation?.accuracy}
+          proximityRadius={proximityRadius}
+          setProximityRadius={setProximityRadius}
+          sortByDistance={sortByDistance}
+          setSortByDistance={setSortByDistance}
         />
       </section>
 
@@ -550,11 +580,16 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
               isLocating={isLocating}
               favoriteStoreIds={favorites}
               onToggleFavorite={onToggleFavorite}
-              theftIncidents={theftIncidents}
-              onSubmitTheftIncident={onSubmitTheftIncident}
               targetNeighborhood={selectedNeighborhood !== 'Todos os Bairros' ? selectedNeighborhood : undefined}
             />
 
+
+            {/* Banner Oficial SALVÓ Fé com leilão Fé Engine */}
+            <SalvoFeAdBanner
+              currentNeighborhood={selectedNeighborhood !== 'Todos os Bairros' ? selectedNeighborhood : 'Barra'}
+              categoryInterest={selectedCategory !== 'Todas' ? selectedCategory : 'Geral'}
+              className="mb-4"
+            />
 
             {/* Quick List Preview under Map */}
             <div id="salvador-stores-section" className="scroll-mt-20">
@@ -566,6 +601,10 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
                   <p className="text-xs text-slate-500 font-medium">
                     {selectedNeighborhood !== 'Todos os Bairros'
                       ? `Filtrado por: ${selectedNeighborhood}`
+                      : sortByDistance && userLocation
+                      ? 'Ordenadas pela proximidade do seu GPS'
+                      : proximityRadius
+                      ? `Lojas no raio de ${proximityRadius / 1000} km do seu GPS`
                       : 'Principais destaques da capital baiana'}
                   </p>
                 </div>
@@ -612,6 +651,7 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
                       onSelectStore={onSelectStore}
                       onOpenChat={onOpenChat}
                       onOpenStreetView={onOpenStreetView}
+                      userLocation={userLocation}
                     />
                   ))}
                 </div>
@@ -628,6 +668,7 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
                 </h3>
                 <p className="text-xs text-slate-500 font-medium">
                   {filteredStores.length} lojas encontradas em Salvador
+                  {sortByDistance && userLocation ? ' • Ordenadas por proximidade GPS' : ''}
                 </p>
               </div>
             </div>
@@ -663,6 +704,7 @@ export const HomeExploreView: React.FC<HomeExploreViewProps> = ({
                     onSelectStore={onSelectStore}
                     onOpenChat={onOpenChat}
                     onOpenStreetView={onOpenStreetView}
+                    userLocation={userLocation}
                   />
                 ))}
               </div>

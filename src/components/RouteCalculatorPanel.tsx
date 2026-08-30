@@ -11,6 +11,7 @@ import {
   getSalvadorTransitOptions,
   RealRouteResult,
 } from '../utils/salvadorRoutingService';
+import { getDirectionsLinks, detectSalvadorNeighborhood } from '../utils/geolocation';
 import {
   Navigation,
   MapPin,
@@ -33,7 +34,7 @@ import {
 } from 'lucide-react';
 
 interface RouteCalculatorPanelProps {
-  userLocation: { lat: number; lng: number } | null;
+  userLocation: { lat: number; lng: number; accuracy?: number } | null;
   destination: RouteDestinationTarget;
   onClose: () => void;
   onSelectNewDestination?: () => void;
@@ -60,6 +61,10 @@ export const RouteCalculatorPanel: React.FC<RouteCalculatorPanelProps> = ({
   // Effective origin coordinates (user GPS or Salvador central origin if user GPS not shared yet)
   const originCoord = userLocation || { lat: -13.0039, lng: -38.5326 }; // Farol da Barra fallback
   const isUsingRealGPS = Boolean(userLocation);
+
+  const detectedOriginNeighborhood = isUsingRealGPS
+    ? detectSalvadorNeighborhood(originCoord.lat, originCoord.lng).neighborhood
+    : 'Farol da Barra';
 
   useEffect(() => {
     let isMounted = true;
@@ -110,15 +115,23 @@ export const RouteCalculatorPanel: React.FC<RouteCalculatorPanelProps> = ({
   const activeOption =
     transitOptions.find((t) => t.type === activeTab) || transitOptions[0];
 
-  const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originCoord.lat},${originCoord.lng}&destination=${destination.coordinates.lat},${destination.coordinates.lng}&travelmode=${
+  const travelMode =
     activeTab === 'bus' || activeTab === 'metro'
       ? 'transit'
       : activeTab === 'walking'
       ? 'walking'
-      : 'driving'
-  }`;
+      : 'driving';
 
-  const wazeUrl = `https://waze.com/ul?ll=${destination.coordinates.lat},${destination.coordinates.lng}&navigate=yes`;
+  const directions = getDirectionsLinks({
+    origin: userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : undefined,
+    destination: destination.coordinates,
+    destinationName: destination.name,
+    travelMode,
+  });
+
+  const googleMapsUrl = directions.googleMaps;
+  const wazeUrl = directions.waze;
+  const uberUrl = directions.uber;
 
   return (
     <div
@@ -165,7 +178,9 @@ export const RouteCalculatorPanel: React.FC<RouteCalculatorPanelProps> = ({
             <div className="flex items-center gap-1.5 text-slate-600">
               <div className="w-2.5 h-2.5 rounded-full bg-blue-600"></div>
               <span className="font-bold truncate">
-                {isUsingRealGPS ? '📍 Sua Localização Atual (GPS)' : '📍 Salvador (Barra / Referência)'}
+                {isUsingRealGPS
+                  ? `📍 Seu GPS (${detectedOriginNeighborhood})`
+                  : '📍 Salvador (Barra / Referência)'}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-slate-800 font-bold">
@@ -381,13 +396,13 @@ export const RouteCalculatorPanel: React.FC<RouteCalculatorPanelProps> = ({
       </div>
 
       {/* Footer Actions: External Navigation Links */}
-      <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 shrink-0 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <a
             href={googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3.5 py-2 bg-[#0B3D91] hover:bg-[#082C69] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+            className="px-3 py-2 bg-[#0B3D91] hover:bg-[#082C69] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
           >
             <span>Google Maps</span>
             <ExternalLink className="w-3.5 h-3.5" />
@@ -397,9 +412,18 @@ export const RouteCalculatorPanel: React.FC<RouteCalculatorPanelProps> = ({
             href={wazeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-xs active:scale-95 cursor-pointer"
+            className="px-2.5 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-xs active:scale-95 cursor-pointer"
           >
             <span>Waze</span>
+          </a>
+
+          <a
+            href={uberUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-2.5 py-2 bg-black hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow-xs active:scale-95 cursor-pointer"
+          >
+            <span>Uber</span>
           </a>
         </div>
 
@@ -407,7 +431,7 @@ export const RouteCalculatorPanel: React.FC<RouteCalculatorPanelProps> = ({
           onClick={onClose}
           className="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
         >
-          Fechar Rota
+          Fechar
         </button>
       </div>
     </div>

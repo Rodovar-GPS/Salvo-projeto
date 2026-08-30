@@ -17,7 +17,7 @@ export const SplashView: React.FC<SplashViewProps> = ({
   const [typewriterText, setTypewriterText] = useState('');
   const [showSubTitle, setShowSubTitle] = useState(false);
 
-  const fullHeadline = 'O COMÉRCIO LOCAL NUNCA MAIS SERÁ O MESMO.';
+  const fullHeadline = 'SALVADOR NA PALMA DA MÃO.';
 
   useEffect(() => {
     let index = 0;
@@ -108,14 +108,20 @@ export const SplashView: React.FC<SplashViewProps> = ({
               showSubTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
             }`}
           >
-            Salvô – o 1º app social de comercialização do Brasil.
+            SALVÔ — SUA CONEXÃO VIVA NA CIDADE.
           </h3>
         </div>
 
         {/* Subtitle Description */}
-        <p className="text-sm sm:text-base md:text-lg text-slate-100 font-medium max-w-2xl mx-auto leading-relaxed drop-shadow-md mb-6 sm:mb-8">
-          Salvador é o ponto de partida. Conecte lojas, ofertas e pessoas em uma rede que valoriza o que é seu. Tudo na palma da sua mão.
+        <p className="text-sm sm:text-base md:text-lg text-slate-100 font-medium max-w-2xl mx-auto leading-relaxed drop-shadow-md mb-4">
+          Descubra o comércio local, encontre ofertas, conecte-se com pessoas e acompanhe a cidade em tempo real.
         </p>
+
+        {/* Highlight Tagline Pill */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-xs sm:text-sm font-heading font-black text-[#FFD60A] mb-6 sm:mb-8 shadow-md">
+          <Sparkles className="w-4 h-4 text-[#FFD60A] shrink-0" />
+          <span>Comércio, conexão e Salvador. Tudo em um só lugar.</span>
+        </div>
 
         {/* Two Glassmorphic Feature Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 w-full max-w-2xl mb-6 sm:mb-8 text-left">
@@ -193,8 +199,8 @@ export const SplashView: React.FC<SplashViewProps> = ({
           </span>
           <ChevronDown className="w-4 h-4 animate-bounce" />
         </button>
-        <p className="text-[11px] text-white/60 font-medium">
-          SALVÔ SSA • Desenvolvido com axé para impulsionar o comércio de Salvador ✨
+        <p className="text-[11px] text-white/80 font-semibold tracking-wide">
+          SALVÔ SSA • O Portal que comunica pessoas e lojistas de Salvador - BA.
         </p>
       </footer>
     </div>

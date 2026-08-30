@@ -16,8 +16,9 @@ import {
   StoreFollow,
   StorePartnership,
   StorePartnershipType,
-  TheftIncident,
 } from './types';
+import { SALVADOR_NEIGHBORHOOD_GEO_MAP } from './utils/salvadorGeoDatabase';
+import { detectSalvadorNeighborhood } from './utils/geolocation';
 import {
   INITIAL_STORES,
   INITIAL_USERS,
@@ -30,7 +31,6 @@ import {
   INITIAL_STORE_PARTNERSHIPS,
 } from './data/mockData';
 import { INITIAL_EVENTS } from './data/eventsData';
-import { INITIAL_THEFT_INCIDENTS } from './data/mockSafetyData';
 import { BonfimRibbon } from './components/BonfimRibbon';
 
 import { Navbar } from './components/Navbar';
@@ -55,6 +55,8 @@ import { EventsView } from './views/EventsView';
 import { ForYouSocialView } from './views/ForYouSocialView';
 import { SalvadorLiveView } from './views/SalvadorLiveView';
 import { SalvoOfficialView } from './views/SalvoOfficialView';
+import { SalvoFePlansView } from './views/SalvoFePlansView';
+import { SalvoFeAdminDashboardView } from './views/SalvoFeAdminDashboardView';
 import { StreetViewExperience } from './components/StreetViewExperience';
 
 export default function App() {
@@ -230,20 +232,6 @@ export default function App() {
     return INITIAL_EVENTS;
   });
 
-  // Theft & Safety Incidents State (persisted in localStorage)
-  const [theftIncidents, setTheftIncidents] = useState<TheftIncident[]>(() => {
-    try {
-      const saved = localStorage.getItem('guia_salvador_thefts');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {
-      // Fallback
-    }
-    return INITIAL_THEFT_INCIDENTS;
-  });
-
   // Filters State
   const [selectedCategory, setSelectedCategory] = useState<StoreCategory | 'Todas'>('Todas');
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<SalvadorNeighborhood | 'Todos os Bairros'>('Todos os Bairros');
@@ -251,113 +239,91 @@ export default function App() {
   const [isNeighborhoodGuideOpen, setIsNeighborhoodGuideOpen] = useState(false);
   const [profileInitialMode, setProfileInitialMode] = useState<'client' | 'merchant'>('client');
 
-  // Geolocation simulation / browser GPS real
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  // Geolocation state: real GPS or user-selected neighborhood location
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+    accuracy?: number;
+    neighborhood?: string;
+    isManual?: boolean;
+  } | null>(() => {
+    try {
+      const saved = localStorage.getItem('salvo_user_location');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
+  });
   const [isLocating, setIsLocating] = useState(false);
 
-  // Sync with LocalStorage
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_users_list', JSON.stringify(users));
-  }, [users]);
+  // Handle manual neighborhood selection (e.g. Pau da Lima, Brotas, Barra, etc.)
+  const handleSetManualNeighborhood = (neighborhoodName: string) => {
+    const geo = SALVADOR_NEIGHBORHOOD_GEO_MAP[neighborhoodName];
+    if (geo) {
+      const newLoc = {
+        lat: geo.lat,
+        lng: geo.lng,
+        accuracy: 15,
+        neighborhood: neighborhoodName,
+        isManual: true,
+      };
+      setUserLocation(newLoc);
+      localStorage.setItem('salvo_user_location', JSON.stringify(newLoc));
+    }
+  };
 
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_user', JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_friendships', JSON.stringify(friendships));
-  }, [friendships]);
-
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_user_follows', JSON.stringify(userFollows));
-  }, [userFollows]);
-
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_store_follows', JSON.stringify(storeFollows));
-  }, [storeFollows]);
-
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_store_partnerships', JSON.stringify(storePartnerships));
-  }, [storePartnerships]);
-
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_social_notifs', JSON.stringify(socialNotifications));
-  }, [socialNotifications]);
-
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_stores', JSON.stringify(stores));
-  }, [stores]);
-
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_favs', JSON.stringify(favorites));
-  }, [favorites]);
-
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_convs', JSON.stringify(conversations));
-  }, [conversations]);
-
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_events', JSON.stringify(events));
-  }, [events]);
-
-  useEffect(() => {
-    localStorage.setItem('guia_salvador_thefts', JSON.stringify(theftIncidents));
-  }, [theftIncidents]);
-
-  // Handle Geolocation - Obter coordenadas reais do GPS do navegador
+  // Handle Geolocation - Obter coordenadas reais do GPS do navegador com detecção precisa
   const handleUseLocation = () => {
     setIsLocating(true);
     if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setUserLocation({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          });
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const detected = detectSalvadorNeighborhood(lat, lng);
+          const newLoc = {
+            lat,
+            lng,
+            accuracy: pos.coords.accuracy,
+            neighborhood: detected.neighborhood,
+            isManual: false,
+          };
+          setUserLocation(newLoc);
+          localStorage.setItem('salvo_user_location', JSON.stringify(newLoc));
           setIsLocating(false);
         },
         (error) => {
-          console.warn('GPS permission denied or unavailable, using Salvador center coordinates:', error);
-          // Fallback to Salvador default if user denies permission or device lacks GPS
-          setUserLocation({ lat: -12.9800, lng: -38.4800 });
+          console.warn('GPS permission denied or unavailable, using Pau da Lima / Salvador reference coordinates:', error);
+          // Default to Pau da Lima if user location cannot be determined
+          const pauDaLimaGeo = SALVADOR_NEIGHBORHOOD_GEO_MAP['Pau da Lima'] || { lat: -12.9290, lng: -38.4280 };
+          const fallbackLoc = {
+            lat: pauDaLimaGeo.lat,
+            lng: pauDaLimaGeo.lng,
+            accuracy: 100,
+            neighborhood: 'Pau da Lima',
+            isManual: true,
+          };
+          setUserLocation(fallbackLoc);
+          localStorage.setItem('salvo_user_location', JSON.stringify(fallbackLoc));
           setIsLocating(false);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-      setUserLocation({ lat: -12.9800, lng: -38.4800 });
+      const pauDaLimaGeo = SALVADOR_NEIGHBORHOOD_GEO_MAP['Pau da Lima'] || { lat: -12.9290, lng: -38.4280 };
+      const fallbackLoc = {
+        lat: pauDaLimaGeo.lat,
+        lng: pauDaLimaGeo.lng,
+        accuracy: 100,
+        neighborhood: 'Pau da Lima',
+        isManual: true,
+      };
+      setUserLocation(fallbackLoc);
+      localStorage.setItem('salvo_user_location', JSON.stringify(fallbackLoc));
       setIsLocating(false);
     }
   };
-
-  // Theft incidents moderation & reporting handlers
-  const handleSubmitTheftIncident = (newIncidentData: Omit<TheftIncident, 'id' | 'createdAt' | 'status' | 'verifiedByAdmin'>) => {
-    const newIncident: TheftIncident = {
-      ...newIncidentData,
-      id: `theft_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-      createdAt: new Date().toISOString(),
-      status: 'pending', // Starts pending admin review
-      verifiedByAdmin: false,
-    };
-    setTheftIncidents((prev) => [newIncident, ...prev]);
-  };
-
-  const handleApproveTheftIncident = (incidentId: string) => {
-    setTheftIncidents((prev) =>
-      prev.map((item) => (item.id === incidentId ? { ...item, status: 'approved', verifiedByAdmin: true } : item))
-    );
-  };
-
-  const handleRejectTheftIncident = (incidentId: string) => {
-    setTheftIncidents((prev) =>
-      prev.map((item) => (item.id === incidentId ? { ...item, status: 'rejected' } : item))
-    );
-  };
-
-  const handleDeleteTheftIncident = (incidentId: string) => {
-    setTheftIncidents((prev) => prev.filter((item) => item.id !== incidentId));
-  };
-
 
   // Toggle favorite
   const handleToggleFavorite = (storeId: string) => {
@@ -1217,6 +1183,7 @@ export default function App() {
             onDeclinePartnership={handleDeclineStorePartnership}
             onSelectStore={(sId) => setSelectedStoreId(sId)}
             onViewUserProfile={handleViewUserProfile}
+            userLocation={userLocation}
           />
         ) : currentTab === 'explore' ? (
           <HomeExploreView
@@ -1234,6 +1201,7 @@ export default function App() {
             setSearchQuery={setSearchQuery}
             userLocation={userLocation}
             onUseLocation={handleUseLocation}
+            onSetManualNeighborhood={handleSetManualNeighborhood}
             isLocating={isLocating}
             onOpenAuth={() => setAppPhase('auth')}
             onOpenOffers={() => setCurrentTab('offers')}
@@ -1245,8 +1213,6 @@ export default function App() {
                 setCurrentTab('chat');
               }
             }}
-            theftIncidents={theftIncidents}
-            onSubmitTheftIncident={handleSubmitTheftIncident}
           />
         ) : currentTab === 'offers' ? (
 
@@ -1377,6 +1343,16 @@ export default function App() {
             currentUser={currentUser}
             onNavigateToTab={(t) => setCurrentTab(t)}
           />
+        ) : currentTab === 'salvo_fe' ? (
+          <SalvoFePlansView
+            currentUser={currentUser}
+            onNavigateToAdmin={() => setCurrentTab('salvofe_admin')}
+            onAdCreatedSuccess={() => {}}
+          />
+        ) : currentTab === 'salvofe_admin' ? (
+          <SalvoFeAdminDashboardView
+            onBackToPlans={() => setCurrentTab('salvo_fe')}
+          />
         ) : currentTab === 'merchant_dashboard' ? (
           <MerchantDashboardView
             store={currentMerchantStore}
@@ -1402,7 +1378,6 @@ export default function App() {
           <AdminDashboardView
             stores={stores}
             events={events}
-            theftIncidents={theftIncidents}
             onApproveStore={handleApproveStore}
             onRejectStore={handleRejectStore}
             onDeleteStore={handleDeleteStore}
@@ -1411,9 +1386,6 @@ export default function App() {
             onRejectEvent={handleRejectEvent}
             onToggleFeatureEvent={handleToggleFeatureEvent}
             onDeleteEvent={handleDeleteEvent}
-            onApproveTheftIncident={handleApproveTheftIncident}
-            onRejectTheftIncident={handleRejectTheftIncident}
-            onDeleteTheftIncident={handleDeleteTheftIncident}
           />
         ) : currentTab === 'merchant_register' ? (
 

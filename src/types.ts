@@ -367,6 +367,8 @@ export type ActiveTab =
   | 'weather_traffic'
   | 'salvo_official'
   | 'salvooficial'
+  | 'salvo_fe'
+  | 'salvofe_admin'
   | 'chat'
   | 'favorites'
   | 'profile'
@@ -687,50 +689,16 @@ export interface PaginatedResponse<T> {
   pagination: PaginationMeta;
 }
 
-// ==========================================
-// 🛡️ ALERTAS DE FURTO & SEGURANÇA COMUNITÁRIA
-// ==========================================
-export type TheftIncidentType =
-  | 'furto_celular'
-  | 'furto_veiculo'
-  | 'furto_bolsa'
-  | 'furto_bicicleta'
-  | 'arrombamento'
-  | 'tentativa_golpe'
-  | 'ponto_atencao';
-
-export interface TheftIncident {
-  id: string;
-  type: TheftIncidentType;
-  title: string;
-  description: string;
-  neighborhood: string;
-  street?: string;
-  address?: string;
-  referencePoint?: string;
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
-  date: string; // DD/MM/AAAA or YYYY-MM-DD
-  time: string; // HH:mm
-  occurredAtDate?: string;
-  occurredAtTime?: string;
-  images: string[];
-  videoUrl?: string;
-  reporterName?: string;
-  reporterContact?: string;
-  reporterRole?: UserRole;
-  reporterId?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  rejectionReason?: string;
-  verifiedByAdmin: boolean;
-  adminNote?: string;
-  createdAt: string;
-  approvedAt?: string;
-  severity: 'alta' | 'media' | 'baixa';
+export interface UserLocationState {
+  lat: number;
+  lng: number;
+  accuracy?: number; // Accuracy in meters
+  neighborhood?: string;
+  isRealGps: boolean;
+  timestamp?: number;
+  speed?: number | null;
+  heading?: number | null;
 }
-
 
 // ==========================================
 // 🧭 SISTEMA DE ROTAS & TRANSPORTE SALVADOR
@@ -771,4 +739,126 @@ export interface SalvadorTransitOption {
   integrationNote?: string;
   trafficStatus?: 'Livre' | 'Moderado' | 'Intenso' | 'Lento';
 }
+
+// ==========================================
+// 🕊️ SALVÓ FÉ — SISTEMA DE TRÁFEGO PAGO & ANÚNCIOS
+// ==========================================
+
+export type FePlanTier = 'local' | 'plus' | 'premium';
+
+export interface FePlanDefinition {
+  id: FePlanTier;
+  name: string; // "Fé Local", "Fé Plus", "Fé Premium"
+  tagline: string;
+  price: number; // 197, 347, 597
+  managementFee: number; // 150.00 fixo
+  netMediaBudget: number; // price - managementFee (47, 197, 447)
+  cpc: number; // 0.50, 0.45, 0.40
+  cpm: number; // 10.00, 9.00, 8.00
+  estimatedClicks: number; // netMediaBudget / cpc
+  estimatedImpressions: number; // (netMediaBudget / cpm) * 1000
+  targetScope: string; // "1 a 3 Bairros", "Multi-Bairros / Polos", "Salvador Inteira"
+  badge: string;
+  color: string;
+  benefits: string[];
+  isPopular?: boolean;
+}
+
+export type FePaymentStatus = 'paid' | 'pending' | 'in_analysis' | 'failed' | 'refunded';
+export type FePaymentMethod = 'pix' | 'credit_card' | 'boleto';
+
+export interface FePaymentRecord {
+  id: string;
+  merchantId: string;
+  merchantName: string;
+  storeName: string;
+  planId: FePlanTier;
+  planName: string;
+  amount: number;
+  managementFee: number;
+  mediaAmount: number;
+  paymentMethod: FePaymentMethod;
+  status: FePaymentStatus;
+  gatewayTransactionId?: string;
+  paidAt?: string;
+  createdAt: string;
+  expiresAt: string;
+  invoiceUrl?: string;
+  pixQrCode?: string;
+  pixCopiaECola?: string;
+}
+
+export type FeAdStatus = 'pending' | 'approved' | 'rejected' | 'paused' | 'completed';
+
+export interface FeAdCreative {
+  id: string;
+  campaignId: string;
+  merchantId: string;
+  storeId?: string;
+  storeName: string;
+  storeLogo?: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  ctaText: string; // e.g. "Pedir no WhatsApp", "Ver Oferta", "Como Chegar"
+  destinationUrl: string; // WhatsApp link, Store page or custom site
+  targetNeighborhoods: string[]; // Bairros alvos em Salvador
+  targetCategories: string[]; // Categorias de negócios
+  bidCpc: number; // Lance máximo por clique (ex: R$ 0.50)
+  status: FeAdStatus;
+  moderationNotes?: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  // Performance Metrics
+  impressions: number;
+  clicks: number;
+  spentAmount: number;
+  ctr: number; // Percentage (clicks / impressions * 100)
+}
+
+export interface FeCampaign {
+  id: string;
+  merchantId: string;
+  merchantName: string;
+  merchantEmail: string;
+  merchantPhone: string;
+  storeName: string;
+  planId: FePlanTier;
+  planName: string;
+  monthlyPrice: number;
+  managementFee: number;
+  totalBudget: number; // Saldo de mídia
+  remainingBudget: number;
+  status: 'active' | 'pending_payment' | 'paused' | 'completed';
+  paymentStatus: FePaymentStatus;
+  startDate: string;
+  endDate: string;
+  ads: FeAdCreative[];
+  createdAt: string;
+}
+
+export interface FeEngineAuctionScore {
+  ad: FeAdCreative;
+  campaign: FeCampaign;
+  advertiserBid: number; // Lance do Anunciante
+  userRelevance: number; // Relevância para o Usuário (0 a 1.0)
+  geoScore: number; // Correspondência geográfica
+  categoryScore: number; // Correspondência de categoria
+  qualityScore: number; // Qualidade / CTR histórico
+  finalScore: number; // (Lance * 0.6) + (Relevância * 0.4)
+  explanation: string;
+}
+
+export interface FeMonthlyRevenueMetric {
+  month: string; // "Jan/26", "Fev/26", etc.
+  totalRevenue: number;
+  managementFees: number;
+  mediaBudgets: number;
+  activeMerchants: number;
+  impressionsDelivered: number;
+  clicksDelivered: number;
+}
+
 

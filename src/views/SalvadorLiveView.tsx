@@ -28,10 +28,14 @@ import {
   Filter,
   ExternalLink,
   Flame,
+  Globe,
+  Play,
+  Pause,
 } from 'lucide-react';
 import { Store } from '../types';
 import { SalvadorSkyWeatherHero } from '../components/SalvadorSkyWeatherHero';
 import { SALVO_DAILY_PLAYLIST, SalvoTrack } from '../components/FloatingRadioPlayer';
+import { NATIONAL_RADIOS } from '../data/salvoMediaDatabase';
 
 interface SalvadorLiveViewProps {
   onNavigateToTab: (tab: any) => void;
@@ -691,100 +695,122 @@ export const SalvadorLiveView: React.FC<SalvadorLiveViewProps> = ({
       )}
 
       {/* =========================================================
-          SECTION 3: RÁDIO SALVÔ OFICIAL AO VIVO (YOUTUBE SEM PROPAGANDAS)
+          SECTION 3: RÁDIO & MÚSICAS AO VIVO (YOUTUBE SEM PROPAGANDAS)
       ========================================================= */}
       {(activeSubTab === 'all' || activeSubTab === 'radios') && (
-        <section className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-[#0B3D91] to-[#C1502E] text-white flex items-center justify-center font-bold shadow-sm">
+        <section className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-r from-purple-700 to-blue-700 text-white flex items-center justify-center font-bold shadow-sm shrink-0">
                 <Radio className="w-5 h-5 text-[#FFC72C] animate-pulse" />
               </div>
               <div>
                 <h2 className="text-xl font-heading font-black text-slate-900 flex items-center gap-2">
-                  <span>Rádio Salvô Oficial</span>
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FFC72C] text-[#0B3D91] font-black uppercase shadow-xs">
-                    Transmissão 24h Oficial
+                  <span>Rádios Nacionais & Músicas</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 font-black uppercase border border-emerald-500/30">
+                    100% Sem Anúncios
                   </span>
                 </h2>
                 <p className="text-xs text-slate-500 font-medium">
-                  O som autêntico de Salvador • Axé Music, Samba-Reggae, Pagodão Baiano e Carnaval sem propagandas
+                  Rádio Gaúcha, Rádio Atlântida FM, Rádio Super Jovem FM e pesquisa direta de músicas no YouTube com player flutuante.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-center">
-              <span className="text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-xl">
-                Player inteligente no canto da tela
-              </span>
+            <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+              <button
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('salvo-open-player', {
+                      detail: { mode: 'studio', tab: 'youtube' },
+                    })
+                  );
+                }}
+                className="text-xs font-bold text-[#0B3D91] bg-amber-300 hover:bg-amber-400 px-3.5 py-2 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>Buscar Músicas</span>
+              </button>
+              <button
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('salvo-open-player', {
+                      detail: { mode: 'studio', tab: 'radios-nat' },
+                    })
+                  );
+                }}
+                className="text-xs font-bold text-white bg-[#0B3D91] hover:bg-blue-800 px-3.5 py-2 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#FFC72C]" />
+                <span>Abrir Studio Pro</span>
+              </button>
             </div>
           </div>
 
-          {/* Radio Salvo Hero Studio Card */}
-          <div className="bg-gradient-to-r from-[#0B3D91] via-[#0E4A9E] to-[#12335E] rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-white/10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
-
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4 sm:gap-6">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white/15 backdrop-blur-md p-1.5 border-2 border-[#FFC72C] shadow-2xl flex items-center justify-center shrink-0">
-                  <img
-                    src="/salvo-logo.png"
-                    alt="Rádio Salvô"
-                    className="w-full h-full object-cover rounded-2xl"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = 'https://iili.io/CDs6WS1.jpg';
-                    }}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs px-2.5 py-0.5 rounded-md bg-[#FFC72C] text-[#0B3D91] font-black uppercase">
-                      Estúdio Oficial
-                    </span>
-                    <span className="text-xs text-emerald-300 font-bold flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                      Ao Vivo em Salvador
-                    </span>
-                  </div>
-                  <h3 className="text-2xl sm:text-3xl font-heading font-black tracking-tight text-white">
-                    Rádio Salvô SSA
-                  </h3>
-                  <p className="text-xs sm:text-sm text-sky-100 max-w-xl font-medium">
-                    Grandes clássicos de Olodum, Timbalada, Ivete Sangalo, BaianaSystem, Harmonia do Samba, Léo Santana e Caetano Veloso selecionados diariamente.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                <div className="text-center sm:text-right hidden sm:block">
-                  <span className="text-[11px] text-amber-300 uppercase font-bold block">
-                    Curadoria Diária
-                  </span>
-                  <span className="text-xs text-white/90 font-semibold">
-                    Sem propagandas
-                  </span>
-                </div>
-              </div>
+          {/* Rádios Nacionais Grid */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-heading font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <Globe className="w-4 h-4 text-purple-600" />
+                <span>Emissoras Nacionais Selecionadas ({NATIONAL_RADIOS.length})</span>
+              </h3>
+              <span className="text-[11px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-lg border border-purple-200">
+                ● Live Streaming Digital
+              </span>
             </div>
 
-            {/* Faixas da Playlist de Salvador */}
-            <div className="mt-6 pt-6 border-t border-white/15 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {SALVO_DAILY_PLAYLIST.slice(0, 4).map((track, i) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {NATIONAL_RADIOS.map((radio) => (
                 <div
-                  key={track.id}
-                  className="bg-black/30 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 flex items-center gap-3 group hover:border-amber-300/60 transition-all"
+                  key={radio.id}
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent('salvo-play-track', {
+                        detail: radio,
+                      })
+                    );
+                  }}
+                  className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs hover:shadow-md hover:border-purple-500/40 transition-all flex flex-col justify-between cursor-pointer group"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-white/10 overflow-hidden shrink-0 relative">
-                    <img
-                      src={track.coverImage}
-                      alt={track.title}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="flex items-start gap-3.5 mb-3">
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 relative bg-slate-100 border border-slate-200">
+                      <img
+                        src={radio.coverImage}
+                        alt={radio.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 bg-purple-100 text-purple-700 rounded-md block w-fit">
+                          {radio.badge || 'NACIONAL'}
+                        </span>
+                        <span className="text-[11px] text-slate-400 font-mono font-bold">
+                          {radio.radioFrequency}
+                        </span>
+                      </div>
+                      <h4 className="font-heading font-black text-sm text-slate-900 truncate group-hover:text-purple-700 transition-colors">
+                        {radio.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 truncate">
+                        {radio.artist}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-black text-white truncate">{track.title}</p>
-                    <p className="text-[10px] text-sky-200 truncate">{track.artist}</p>
+
+                  <p className="text-xs text-slate-600 line-clamp-2 mb-4">
+                    {radio.description}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                      Digital Live Stream
+                    </span>
+                    <button className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs">
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>Sintonizar</span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -910,8 +936,8 @@ export const SalvadorLiveView: React.FC<SalvadorLiveViewProps> = ({
       )}
 
       {/* Footer Salvador Local Note */}
-      <div className="bg-slate-100 rounded-2xl p-4 text-center text-xs text-slate-500 font-medium border border-slate-200">
-        SALVÔ SSA • Atualizações em tempo real integradas aos boletins oficiais de Salvador, Transalvador e Defesa Civil da Bahia.
+      <div className="bg-slate-100 rounded-2xl p-4 text-center text-xs text-slate-600 font-semibold border border-slate-200">
+        SALVÔ SSA • O Portal que comunica pessoas e lojistas de Salvador - BA.
       </div>
     </div>
   );

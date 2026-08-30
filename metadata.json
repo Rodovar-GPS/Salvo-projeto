@@ -1,6 +1,6 @@
 {
   "name": "SALVÔ",
-  "description": "Salvô — Guia Oficial do Comércio Local de Salvador. Encontre lojas, ofertas e serviços perto de você.",
+  "description": "SALVÔ — Sua Conexão Viva na Cidade. Descubra o comércio local, encontre ofertas, conecte-se com pessoas e acompanhe Salvador em tempo real. Comércio, conexão e Salvador. Tudo em um só lugar.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

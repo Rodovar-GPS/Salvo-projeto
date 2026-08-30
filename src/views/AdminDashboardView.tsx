@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { Store, User, EventItem, TheftIncident } from '../types';
-import { THEFT_TYPE_LABELS } from '../data/mockSafetyData';
+import { Store, User, EventItem } from '../types';
 import { ClearableInput } from '../components/ClearableInput';
 import {
-  ShieldAlert,
   CheckCircle2,
   XCircle,
   Clock,
@@ -24,14 +22,11 @@ import {
   AlertCircle,
   ThumbsUp,
   ThumbsDown,
-  Video,
-  Image as ImageIcon,
 } from 'lucide-react';
 
 interface AdminDashboardViewProps {
   stores: Store[];
   events: EventItem[];
-  theftIncidents?: TheftIncident[];
   onApproveStore: (storeId: string) => void;
   onRejectStore: (storeId: string) => void;
   onDeleteStore: (storeId: string) => void;
@@ -40,15 +35,11 @@ interface AdminDashboardViewProps {
   onRejectEvent: (eventId: string, note?: string) => void;
   onToggleFeatureEvent: (eventId: string) => void;
   onDeleteEvent: (eventId: string) => void;
-  onApproveTheftIncident?: (incidentId: string) => void;
-  onRejectTheftIncident?: (incidentId: string) => void;
-  onDeleteTheftIncident?: (incidentId: string) => void;
 }
 
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   stores,
   events,
-  theftIncidents = [],
   onApproveStore,
   onRejectStore,
   onDeleteStore,
@@ -57,15 +48,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   onRejectEvent,
   onToggleFeatureEvent,
   onDeleteEvent,
-  onApproveTheftIncident,
-  onRejectTheftIncident,
-  onDeleteTheftIncident,
 }) => {
-  const [activeAdminTab, setActiveAdminTab] = useState<'stores' | 'events' | 'thefts'>('stores');
+  const [activeAdminTab, setActiveAdminTab] = useState<'stores' | 'events'>('stores');
   const [filterStatus, setFilterStatus] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPreviewEvent, setSelectedPreviewEvent] = useState<EventItem | null>(null);
-  const [selectedPreviewTheft, setSelectedPreviewTheft] = useState<TheftIncident | null>(null);
 
   // Store filtering
   const filteredStores = stores.filter((s) => {
@@ -97,35 +84,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     return true;
   });
 
-  // Theft filtering
-  const filteredThefts = theftIncidents.filter((th) => {
-    if (filterStatus !== 'all' && th.status !== filterStatus) return false;
-    if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase();
-      const addr = (th.address || th.street || th.referencePoint || '').toLowerCase();
-      return (
-        th.title.toLowerCase().includes(q) ||
-        th.neighborhood.toLowerCase().includes(q) ||
-        addr.includes(q) ||
-        th.description.toLowerCase().includes(q) ||
-        (th.reporterName && th.reporterName.toLowerCase().includes(q))
-      );
-    }
-    return true;
-  });
-
-
   const totalActiveStores = stores.filter((s) => s.approvalStatus === 'approved').length;
   const totalPendingStores = stores.filter((s) => s.approvalStatus === 'pending').length;
 
   const totalActiveEvents = events.filter((e) => e.status === 'approved').length;
   const totalPendingEvents = events.filter((e) => e.status === 'pending').length;
 
-  const totalPendingThefts = theftIncidents.filter((t) => t.status === 'pending').length;
-  const totalActiveThefts = theftIncidents.filter((t) => t.status === 'approved').length;
-
   const estimatedRevenue = totalActiveStores * 12; // R$ 12/mês per store
-
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -240,26 +205,6 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {totalPendingEvents > 0 && (
             <span className="px-1.5 py-0.2 bg-[#E8552B] text-white rounded-full text-[10px] font-black animate-pulse">
               {totalPendingEvents}
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveAdminTab('thefts');
-            setFilterStatus('all');
-          }}
-          className={`px-5 py-2.5 rounded-2xl font-heading font-black text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer ${
-            activeAdminTab === 'thefts'
-              ? 'bg-red-600 text-white shadow-md'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <ShieldAlert className="w-4 h-4 text-rose-300" />
-          <span>Alertas de Furto & Segurança ({theftIncidents.length})</span>
-          {totalPendingThefts > 0 && (
-            <span className="px-1.5 py-0.2 bg-amber-400 text-slate-900 rounded-full text-[10px] font-black animate-pulse">
-              {totalPendingThefts} pendentes
             </span>
           )}
         </button>
@@ -588,188 +533,6 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         </div>
       )}
 
-      {/* TAB 3: THEFTS & SAFETY INCIDENTS MODERATION */}
-      {activeAdminTab === 'thefts' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="font-heading font-black text-base text-slate-900 flex items-center gap-2">
-                  <ShieldAlert className="w-5 h-5 text-red-600" />
-                  <span>Sinalizações de Furto & Alertas de Segurança Comunitária</span>
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Moderação obrigatória: Ocorrências sinalizadas por usuários só são liberadas para visualização no mapa após aprovação do administrador.
-                </p>
-              </div>
-              <span className="text-xs font-bold text-slate-500">
-                {filteredThefts.length} de {theftIncidents.length} ocorrências
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] font-black uppercase tracking-wider text-slate-500">
-                    <th className="p-4">Ocorrência / Tipo</th>
-                    <th className="p-4">Bairro & Local</th>
-                    <th className="p-4">Data & Horário</th>
-                    <th className="p-4">Mídias (Fotos/Vídeo)</th>
-                    <th className="p-4">Denunciante</th>
-                    <th className="p-4 text-center">Status</th>
-                    <th className="p-4 text-right">Ações de Moderação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                  {filteredThefts.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-400">
-                        Nenhuma ocorrência de furto encontrada com os filtros atuais.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredThefts.map((incident) => {
-                      const typeInfo = THEFT_TYPE_LABELS[incident.type] || THEFT_TYPE_LABELS['furto_celular'];
-                      const hasPhotos = incident.images && incident.images.length > 0;
-                      const hasVideo = Boolean(incident.videoUrl);
-
-                      return (
-                        <tr key={incident.id} className="hover:bg-slate-50/80 transition-colors">
-                          {/* Incident Title & Type */}
-                          <td className="p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center text-lg shrink-0 border border-red-200 shadow-2xs">
-                                {typeInfo.icon}
-                              </div>
-                              <div className="min-w-0">
-                                <h4 className="font-heading font-black text-slate-900 truncate max-w-xs">
-                                  {incident.title}
-                                </h4>
-                                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600">
-                                  {typeInfo.label}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Neighborhood & Address */}
-                          <td className="p-4">
-                            <div className="font-bold text-slate-900">{incident.neighborhood}</div>
-                            <div className="text-[11px] text-slate-500 truncate max-w-xs">{incident.address || incident.street || incident.referencePoint || 'Salvador'}</div>
-                          </td>
-
-                          {/* Date & Time */}
-                          <td className="p-4">
-                            <div className="font-bold text-slate-900">{incident.occurredAtDate || incident.date}</div>
-                            <div className="text-[11px] text-slate-500">às {incident.occurredAtTime || incident.time}</div>
-                          </td>
-
-                          {/* Media Attached */}
-                          <td className="p-4">
-                            <div className="flex items-center gap-1.5">
-                              {hasPhotos && (
-                                <span className="px-2 py-1 bg-sky-50 text-[#0B3D91] border border-sky-200 rounded-lg text-[10px] font-bold flex items-center gap-1">
-                                  <ImageIcon className="w-3 h-3" />
-                                  <span>{incident.images.length} foto(s)</span>
-                                </span>
-                              )}
-                              {hasVideo && (
-                                <span className="px-2 py-1 bg-red-50 text-red-700 border border-red-200 rounded-lg text-[10px] font-bold flex items-center gap-1">
-                                  <Video className="w-3 h-3" />
-                                  <span>Vídeo</span>
-                                </span>
-                              )}
-                              {!hasPhotos && !hasVideo && (
-                                <span className="text-[11px] text-slate-400">Sem anexos</span>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Reporter */}
-                          <td className="p-4">
-                            <div className="font-bold text-slate-800">{incident.reporterName || 'Cidadão Anônimo'}</div>
-                            <div className="text-[10px] text-slate-500">{incident.reporterContact || 'Sem contato'}</div>
-                          </td>
-
-
-                          {/* Status */}
-                          <td className="p-4 text-center">
-                            <span
-                              className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${
-                                incident.status === 'approved'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : incident.status === 'pending'
-                                  ? 'bg-amber-100 text-amber-900 animate-pulse'
-                                  : 'bg-rose-100 text-rose-800'
-                              }`}
-                            >
-                              {incident.status === 'approved' && '● No Mapa'}
-                              {incident.status === 'pending' && '⏳ Aguarda Aprovação'}
-                              {incident.status === 'rejected' && '✕ Rejeitado'}
-                            </span>
-                          </td>
-
-                          {/* Actions */}
-                          <td className="p-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => setSelectedPreviewTheft(incident)}
-                                className="p-1.5 text-slate-500 hover:text-[#0B3D91] hover:bg-slate-100 rounded-lg transition-all"
-                                title="Ver Detalhes, Fotos e Vídeo"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-
-                              {incident.status !== 'approved' && (
-                                <button
-                                  onClick={() => {
-                                    if (onApproveTheftIncident) onApproveTheftIncident(incident.id);
-                                  }}
-                                  className="px-3 py-1 bg-[#2E9E5B] hover:bg-emerald-600 text-white font-heading font-black rounded-xl text-[11px] transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
-                                  title="Aprovar e Publicar no Mapa do Salvador"
-                                >
-                                  <ThumbsUp className="w-3.5 h-3.5" />
-                                  <span>Liberar no Mapa</span>
-                                </button>
-                              )}
-
-                              {incident.status !== 'rejected' && (
-                                <button
-                                  onClick={() => {
-                                    if (onRejectTheftIncident) onRejectTheftIncident(incident.id);
-                                  }}
-                                  className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-[10px] transition-all flex items-center gap-1 cursor-pointer"
-                                  title="Rejeitar Ocorrência"
-                                >
-                                  <ThumbsDown className="w-3.5 h-3.5" />
-                                  <span>Recusar</span>
-                                </button>
-                              )}
-
-                              <button
-                                onClick={() => {
-                                  if (confirm(`Excluir permanentemente a ocorrência "${incident.title}"?`)) {
-                                    if (onDeleteTheftIncident) onDeleteTheftIncident(incident.id);
-                                  }
-                                }}
-                                className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                                title="Excluir Definitivamente"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* MODAL: Event Preview for Admin */}
       {selectedPreviewEvent && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -827,104 +590,6 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   className="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl text-xs"
                 >
                   Rejeitar
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: Theft Incident Preview for Admin */}
-      {selectedPreviewTheft && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div>
-                <span className="px-2.5 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 w-fit">
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  {THEFT_TYPE_LABELS[selectedPreviewTheft.type]?.label || 'Furto'}
-                </span>
-                <h3 className="font-heading font-black text-xl text-slate-900 mt-1">
-                  {selectedPreviewTheft.title}
-                </h3>
-              </div>
-              <button
-                onClick={() => setSelectedPreviewTheft(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Images */}
-            {selectedPreviewTheft.images && selectedPreviewTheft.images.length > 0 && (
-              <div className="space-y-2 mb-4">
-                <div className="text-[11px] font-black uppercase text-slate-400">Fotos Anexadas</div>
-                <div className="grid grid-cols-2 gap-2">
-                  {selectedPreviewTheft.images.map((img, i) => (
-                    <img
-                      key={i}
-                      src={img}
-                      alt={`Foto ${i + 1}`}
-                      className="w-full h-32 object-cover rounded-xl border border-slate-200"
-                      referrerPolicy="no-referrer"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Video */}
-            {selectedPreviewTheft.videoUrl && (
-              <div className="mb-4">
-                <div className="text-[11px] font-black uppercase text-slate-400 mb-1">Vídeo Anexado</div>
-                <a
-                  href={selectedPreviewTheft.videoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-xl text-xs font-bold flex items-center justify-between border border-red-200"
-                >
-                  <span className="flex items-center gap-2">
-                    <Video className="w-4 h-4" />
-                    <span>Abrir link do vídeo enviado</span>
-                  </span>
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-            )}
-
-            <div className="space-y-3 text-xs text-slate-700 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-              <p><strong>Bairro:</strong> {selectedPreviewTheft.neighborhood}</p>
-              <p><strong>Endereço / Referência:</strong> {selectedPreviewTheft.address || selectedPreviewTheft.street || selectedPreviewTheft.referencePoint || 'Salvador'}</p>
-              <p><strong>Data & Horário:</strong> {selectedPreviewTheft.occurredAtDate || selectedPreviewTheft.date} às {selectedPreviewTheft.occurredAtTime || selectedPreviewTheft.time}</p>
-              <p><strong>Denunciante:</strong> {selectedPreviewTheft.reporterName || 'Anônimo'} ({selectedPreviewTheft.reporterContact || 'Sem contato'})</p>
-              <p><strong>Descrição dos Fatos:</strong> {selectedPreviewTheft.description}</p>
-            </div>
-
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              {selectedPreviewTheft.status !== 'approved' && (
-                <button
-                  onClick={() => {
-                    if (onApproveTheftIncident) onApproveTheftIncident(selectedPreviewTheft.id);
-                    setSelectedPreviewTheft(null);
-                  }}
-                  className="px-4 py-2 bg-[#2E9E5B] text-white font-heading font-black rounded-xl text-xs flex items-center gap-1.5"
-                >
-                  <ThumbsUp className="w-4 h-4" />
-                  <span>Liberar no Mapa</span>
-                </button>
-              )}
-              {selectedPreviewTheft.status !== 'rejected' && (
-                <button
-                  onClick={() => {
-                    if (onRejectTheftIncident) onRejectTheftIncident(selectedPreviewTheft.id);
-                    setSelectedPreviewTheft(null);
-                  }}
-                  className="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl text-xs flex items-center gap-1.5"
-                >
-                  <ThumbsDown className="w-4 h-4" />
-                  <span>Rejeitar</span>
                 </button>
               )}
             </div>

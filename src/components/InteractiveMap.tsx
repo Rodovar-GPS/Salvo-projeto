@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
-import { Store, StoreCategory, TheftIncident, RouteDestinationTarget } from '../types';
+import { Store, StoreCategory, RouteDestinationTarget } from '../types';
 import { STORE_CATEGORIES, NEIGHBORHOOD_SALES_EXAMPLES, SALVADOR_NEIGHBORHOODS, NeighborhoodSaleExample } from '../data/mockData';
-import { THEFT_TYPE_LABELS } from '../data/mockSafetyData';
 import { isValidPublicStore } from '../utils/storeValidation';
 import { fetchRealSalvadorRoute } from '../utils/salvadorRoutingService';
+import { getDistanceInKm } from '../utils/geolocation';
 import {
   getSalvadorNeighborhoodLocation,
   SALVADOR_NEIGHBORHOOD_GEO_MAP,
@@ -12,7 +12,6 @@ import {
 import { ClearableInput } from './ClearableInput';
 import { StoreCard } from './StoreCard';
 import { RouteCalculatorPanel } from './RouteCalculatorPanel';
-import { SafetyIncidentModal } from './SafetyIncidentModal';
 import {
   MapPin,
   Navigation,
@@ -36,8 +35,6 @@ import {
   Building,
   ExternalLink,
   Flame,
-  ShieldAlert,
-  AlertTriangle,
   Plus,
 } from 'lucide-react';
 
@@ -52,8 +49,6 @@ interface InteractiveMapProps {
   isLocating: boolean;
   favoriteStoreIds?: string[];
   onToggleFavorite?: (storeId: string) => void;
-  theftIncidents?: TheftIncident[];
-  onSubmitTheftIncident?: (newIncident: Omit<TheftIncident, 'id' | 'createdAt' | 'status' | 'verifiedByAdmin'>) => void;
   targetNeighborhood?: string;
   targetCoordinates?: { lat: number; lng: number };
 }
@@ -245,8 +240,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   isLocating,
   favoriteStoreIds = [],
   onToggleFavorite,
-  theftIncidents = [],
-  onSubmitTheftIncident,
   targetNeighborhood,
   targetCoordinates,
 }) => {
@@ -256,7 +249,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const storeMarkersGroupRef = useRef<L.FeatureGroup | null>(null);
   const landmarksGroupRef = useRef<L.FeatureGroup | null>(null);
   const salesGroupRef = useRef<L.FeatureGroup | null>(null);
-  const theftMarkersGroupRef = useRef<L.FeatureGroup | null>(null);
   const userMarkerRef = useRef<L.LayerGroup | null>(null);
   const routeLineRef = useRef<L.Polyline | null>(null);
 
@@ -265,30 +257,20 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const validStores = useMemo(() => stores.filter(isValidPublicStore), [stores]);
   const [activePinStore, setActivePinStore] = useState<Store | null>(null);
   const [activeSaleExample, setActiveSaleExample] = useState<NeighborhoodSaleExample | null>(null);
-  const [activeMapFilter, setActiveMapFilter] = useState<'all' | 'offers_only' | 'open_only' | 'sales_examples'>('all');
+  const [filterOffers, setFilterOffers] = useState<boolean>(true);
+  const [filterOpen, setFilterOpen] = useState<boolean>(true);
   const [currentLayerId, setCurrentLayerId] = useState<string>('osm_classic');
   const [showLandmarks, setShowLandmarks] = useState<boolean>(true);
   const [showSalesExamples, setShowSalesExamples] = useState<boolean>(true);
-  const [showTheftLayer, setShowTheftLayer] = useState<boolean>(true);
   const [showLayersMenu, setShowLayersMenu] = useState<boolean>(false);
   const [showNeighborhoodSearch, setShowNeighborhoodSearch] = useState<boolean>(false);
   const [neighborhoodSearchQuery, setNeighborhoodSearchQuery] = useState<string>('');
   const [showRouteLine, setShowRouteLine] = useState<boolean>(true);
   const [activeLandmark, setActiveLandmark] = useState<Landmark | null>(null);
 
-  // Theft Incidents & Safety States
-  const [activeTheftIncident, setActiveTheftIncident] = useState<TheftIncident | null>(null);
-  const [showTheftModal, setShowTheftModal] = useState<boolean>(false);
-  const [theftModalMode, setTheftModalMode] = useState<'view' | 'create'>('view');
-
   // Route Calculator States
   const [activeRouteDestination, setActiveRouteDestination] = useState<RouteDestinationTarget | null>(null);
   const [showRouteCalculator, setShowRouteCalculator] = useState<boolean>(false);
-
-  // Approved theft incidents for public map display
-  const approvedTheftIncidents = useMemo(() => {
-    return theftIncidents.filter((inc) => inc.status === 'approved');
-  }, [theftIncidents]);
 
 
   // Filtered neighborhood list for quick search
@@ -300,21 +282,21 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     return SALVADOR_NEIGHBORHOODS.filter((n) => n.toLowerCase().includes(q));
   }, [neighborhoodSearchQuery]);
 
-  // Filtered valid stores
+  // Filtered valid stores (respects Com Oferta and Abertas filters)
   const filteredStores = useMemo(() => {
     return validStores.filter((store) => {
       if (selectedCategory !== 'Todas' && store.category !== selectedCategory) {
         return false;
       }
-      if (activeMapFilter === 'offers_only' && (!store.offers || store.offers.length === 0)) {
+      if (filterOffers && (!store.offers || store.offers.length === 0)) {
         return false;
       }
-      if (activeMapFilter === 'open_only' && !store.isOpenNow) {
+      if (filterOpen && !store.isOpenNow) {
         return false;
       }
       return true;
     });
-  }, [validStores, selectedCategory, activeMapFilter]);
+  }, [validStores, selectedCategory, filterOffers, filterOpen]);
 
   const getCategoryColor = (category: StoreCategory) => {
     const found = STORE_CATEGORIES.find((c) => c.name === category);
@@ -359,13 +341,11 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     const storeMarkersGroup = L.featureGroup().addTo(map);
     const landmarksGroup = L.featureGroup().addTo(map);
     const salesGroup = L.featureGroup().addTo(map);
-    const theftMarkersGroup = L.featureGroup().addTo(map);
     const userMarkerGroup = L.layerGroup().addTo(map);
 
     storeMarkersGroupRef.current = storeMarkersGroup;
     landmarksGroupRef.current = landmarksGroup;
     salesGroupRef.current = salesGroup;
-    theftMarkersGroupRef.current = theftMarkersGroup;
     userMarkerRef.current = userMarkerGroup;
     mapInstanceRef.current = map;
 
@@ -901,76 +881,6 @@ function computeStoreClusters(
     }
   }, [targetNeighborhood, targetCoordinates]);
 
-  // Render Theft & Safety Incident Markers (Marcadores de Furto Aprovados)
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const theftGroup = theftMarkersGroupRef.current;
-    if (!map || !theftGroup) return;
-
-    theftGroup.clearLayers();
-
-    if (!showTheftLayer) return;
-
-    approvedTheftIncidents.forEach((incident) => {
-      const typeConfig = THEFT_TYPE_LABELS[incident.type] || THEFT_TYPE_LABELS['furto_celular'];
-      const hasMedia = (incident.images && incident.images.length > 0) || Boolean(incident.videoUrl);
-
-      const markerHtml = `
-        <div class="relative cursor-pointer select-none group flex flex-col items-center animate-fadeIn">
-          <div class="absolute -inset-2 rounded-full bg-red-600/30 pulse-ring-effect pointer-events-none"></div>
-          
-          <div class="mb-1 px-2 py-0.5 bg-red-600 text-white text-[9px] font-black uppercase tracking-wider rounded-full shadow-lg whitespace-nowrap flex items-center gap-1 border border-white/90">
-            <span>🚨</span>
-            <span>${typeConfig.label.split(' ')[0]}</span>
-            ${hasMedia ? '<span class="text-[8px] bg-white/30 px-1 rounded">📸</span>' : ''}
-          </div>
-
-          <div class="relative flex items-center justify-center w-10 h-10 rounded-2xl shadow-xl transition-all transform hover:scale-115 bg-gradient-to-br from-red-600 to-rose-700 text-white" style="border: 2.5px solid #FFFFFF;">
-            <span class="text-base drop-shadow-xs">${typeConfig.icon}</span>
-            <div class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-white shadow-xs"></div>
-          </div>
-
-          <div class="mt-1 px-2 py-0.5 bg-slate-950/90 text-white rounded-md text-[9px] font-bold shadow-md max-w-[130px] truncate text-center backdrop-blur-xs border border-white/20">
-            ${incident.neighborhood}
-          </div>
-          
-          <div class="w-1.5 h-1.5 bg-slate-950 rotate-45 -mt-0.5"></div>
-        </div>
-      `;
-
-      const theftIcon = L.divIcon({
-        className: 'custom-theft-pin',
-        html: markerHtml,
-        iconSize: [130, 80],
-        iconAnchor: [65, 60],
-      });
-
-      const marker = L.marker([incident.coordinates.lat, incident.coordinates.lng], {
-        icon: theftIcon,
-      });
-
-      marker.bindTooltip(`🚨 ${incident.title} (${incident.neighborhood}) • Clique para ver fotos e vídeo`, {
-        permanent: false,
-        direction: 'top',
-        className: 'custom-leaflet-tooltip',
-      });
-
-      marker.on('click', () => {
-        setActiveTheftIncident(incident);
-        setTheftModalMode('view');
-        setShowTheftModal(true);
-        setActivePinStore(null);
-        setActiveLandmark(null);
-        setActiveSaleExample(null);
-        map.flyTo([incident.coordinates.lat, incident.coordinates.lng], Math.max(map.getZoom(), 16), {
-          duration: 0.8,
-        });
-      });
-
-      theftGroup.addLayer(marker);
-    });
-  }, [approvedTheftIncidents, showTheftLayer, mapZoom]);
-
   // Render User Location and Dynamic Real Route (OSRM Geometry)
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -1095,18 +1005,13 @@ function computeStoreClusters(
   // Calculate distance between user and active store
   const calculateDistance = () => {
     if (!userLocation || !activePinStore) return null;
-    const R = 6371; // km
-    const dLat = ((activePinStore.coordinates.lat - userLocation.lat) * Math.PI) / 180;
-    const dLon = ((activePinStore.coordinates.lng - userLocation.lng) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((userLocation.lat * Math.PI) / 180) *
-        Math.cos((activePinStore.coordinates.lat * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c;
-    return d.toFixed(1);
+    const km = getDistanceInKm(
+      userLocation.lat,
+      userLocation.lng,
+      activePinStore.coordinates.lat,
+      activePinStore.coordinates.lng
+    );
+    return km.toFixed(1);
   };
 
   // Handler to initiate route calculation for any store or point
@@ -1132,43 +1037,44 @@ function computeStoreClusters(
           <div className="pointer-events-auto flex items-center bg-white/95 backdrop-blur-md px-2 py-1.5 rounded-2xl shadow-lg border border-slate-200 text-xs font-bold gap-1 overflow-x-auto max-w-full scrollbar-none">
             <button
               onClick={() => {
-                setActiveMapFilter('all');
-                setShowSalesExamples(true);
+                setFilterOffers(false);
+                setFilterOpen(false);
               }}
               className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
-                activeMapFilter === 'all'
+                !filterOffers && !filterOpen
                   ? 'bg-[#0B3D91] text-white shadow-xs'
                   : 'text-slate-700 hover:text-[#0B3D91] hover:bg-slate-100'
               }`}
+              title="Exibir todas as lojas sem filtros"
             >
               Todas ({validStores.length})
             </button>
             <button
               onClick={() => {
-                setActiveMapFilter('offers_only');
-                setShowSalesExamples(false);
+                setFilterOffers((prev) => !prev);
               }}
               className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
-                activeMapFilter === 'offers_only'
+                filterOffers
                   ? 'bg-[#C1502E] text-white shadow-xs'
                   : 'text-slate-700 hover:text-[#C1502E] hover:bg-slate-100'
               }`}
+              title="Filtrar apenas lojas com ofertas e descontos ativos"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Com Oferta</span>
             </button>
             <button
               onClick={() => {
-                setActiveMapFilter('open_only');
-                setShowSalesExamples(false);
+                setFilterOpen((prev) => !prev);
               }}
               className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 whitespace-nowrap cursor-pointer ${
-                activeMapFilter === 'open_only'
+                filterOpen
                   ? 'bg-[#1F6E43] text-white shadow-xs'
                   : 'text-slate-700 hover:text-[#1F6E43] hover:bg-slate-100'
               }`}
+              title="Filtrar apenas lojas abertas agora"
             >
-              <span className="w-2 h-2 rounded-full bg-[#1F6E43] inline-block animate-ping"></span>
+              <span className={`w-2 h-2 rounded-full ${filterOpen ? 'bg-emerald-300' : 'bg-[#1F6E43]'} inline-block animate-ping`}></span>
               <span>Abertas</span>
             </button>
             <button
@@ -1185,37 +1091,10 @@ function computeStoreClusters(
               <Tag className="w-3.5 h-3.5 text-[#E5A000]" />
               <span>Vendas ({NEIGHBORHOOD_SALES_EXAMPLES.length})</span>
             </button>
-
-            {/* Theft Alerts Layer Toggle */}
-            <button
-              onClick={() => setShowTheftLayer((prev) => !prev)}
-              className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                showTheftLayer
-                  ? 'bg-red-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-              title="Exibir ou ocultar alertas de furto e segurança comunitária em Salvador"
-            >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span>Furtos ({approvedTheftIncidents.length})</span>
-            </button>
           </div>
 
-          {/* Action Triggers: Signal Theft, Landmarks & Neighborhood Search */}
+          {/* Action Triggers: Landmarks & Neighborhood Search */}
           <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
-            {/* Signal Theft / Report Incident Button */}
-            <button
-              onClick={() => {
-                setTheftModalMode('create');
-                setShowTheftModal(true);
-              }}
-              className="px-3 py-2 rounded-2xl text-xs font-heading font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg border bg-gradient-to-r from-red-600 to-rose-600 text-white hover:from-red-700 hover:to-rose-700 border-red-700 transition-all active:scale-95 cursor-pointer"
-              title="Sinalizar furto ou ocorrência no mapa (aprovado pela moderação)"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="whitespace-nowrap">Sinalizar Furto</span>
-            </button>
-
             {/* Landmarks Toggle */}
             <button
               onClick={() => setShowLandmarks((prev) => !prev)}
@@ -1601,6 +1480,7 @@ function computeStoreClusters(
               onSelectStore={onSelectStore}
               onOpenChat={onOpenChat}
               onOpenStreetView={onOpenStreetView}
+              userLocation={userLocation}
             />
           </div>
         </div>
@@ -1614,24 +1494,6 @@ function computeStoreClusters(
           onClose={() => {
             setShowRouteCalculator(false);
             setActiveRouteDestination(null);
-          }}
-        />
-      )}
-
-      {/* Safety & Theft Incident Modal / Popup (Visualizador & Reporte de Ocorrência) */}
-      {showTheftModal && (
-        <SafetyIncidentModal
-          mode={theftModalMode}
-          incident={activeTheftIncident}
-          userCoordinates={userLocation}
-          onClose={() => {
-            setShowTheftModal(false);
-            setActiveTheftIncident(null);
-          }}
-          onSubmitIncident={(newInc) => {
-            if (onSubmitTheftIncident) {
-              onSubmitTheftIncident(newInc);
-            }
           }}
         />
       )}
