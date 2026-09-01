@@ -1,212 +1,323 @@
+// ==============================================================================
+// 🌊 ONBOARDING VIEW — CONFIGURAÇÃO INICIAL UNIFICADA DO SUPERAPP SALVÔ
+// Seleção de Bairros, Categorias de Interesse e Permissões (GPS & Notificações)
+// ==============================================================================
+
 import React, { useState } from 'react';
-import { BonfimRibbon } from '../components/BonfimRibbon';
-import { MapPin, Sparkles, MessageCircle, Store, ArrowRight, ArrowLeft, CheckCircle2, Compass } from 'lucide-react';
+import { MaresRibbon, WavesPattern, SalvadorSkylineSilhouette } from '../components/MaresPattern';
+import { MapPin, Sparkles, Bell, Navigation, CheckCircle2, ArrowRight, ShieldCheck, Tag } from 'lucide-react';
 
 interface OnboardingViewProps {
   onComplete: () => void;
   onOpenAuth: () => void;
 }
 
-export const OnboardingView: React.FC<OnboardingViewProps> = ({
-  onComplete,
-  onOpenAuth,
-}) => {
-  const [currentSlide, setCurrentSlide] = useState(0);
+const POPULAR_NEIGHBORHOODS = [
+  'Barra',
+  'Rio Vermelho',
+  'Pelourinho / Centro Histórico',
+  'Pituba',
+  'Itapuã',
+  'Imbuí',
+  'Stella Maris',
+  'Bonfim / Cidade Baixa',
+  'Graça',
+  'Cabula',
+];
 
-  const slides = [
-    {
-      step: '01',
-      title: 'Encontre lojas perto de você',
-      subtitle: 'Comércio de Salvador em um só lugar',
-      description:
-        'Explore bairros icônicos como Barra, Rio Vermelho, Pelourinho, Pituba, Itapuã, Bonfim e Stella Maris. Veja horários de funcionamento em tempo real e status de aberto agora.',
-      icon: MapPin,
-      color: '#0B4F8A',
-      accentBg: 'bg-blue-50',
-      badge: 'Localização Inteligente',
-      illustration: '🏝️📍🏪',
-    },
-    {
-      step: '02',
-      title: 'Veja ofertas direto no mapa',
-      subtitle: 'Economia e ofertas exclusivas',
-      description:
-        'Toque nos pinos do mapa para ver a prévia de promoções ativas sem precisar abrir o perfil completo. Descubra descontos especiais e aproveite os melhores preços do comércio baiano.',
-      icon: Sparkles,
-      color: '#E8552B',
-      accentBg: 'bg-orange-50',
-      badge: 'Economize em Salvador',
-      illustration: '🎁🏷️✨',
-    },
-    {
-      step: '03',
-      title: 'Fale com a loja pelo chat',
-      subtitle: 'Atendimento rápido e direto',
-      description:
-        'Tire dúvidas sobre produtos, cardápios, entregas e agendamentos instantaneamente com os lojistas locais, sem intermediários. 100% gratuito para o morador e turista.',
-      icon: MessageCircle,
-      color: '#2E9E5B',
-      accentBg: 'bg-green-50',
-      badge: 'Chat em Tempo Real',
-      illustration: '💬🛵👋',
-    },
-    {
-      step: '04',
-      title: 'Para Lojistas de Salvador',
-      subtitle: 'Divulgue sua empresa por R$ 12/mês',
-      description:
-        'Coloque sua loja no mapa mais acessado da Bahia! Tenha painel de controle próprio, publique ofertas relâmpago, receba avaliações e atenda clientes no chat.',
-      icon: Store,
-      color: '#0B4F8A',
-      accentBg: 'bg-amber-50',
-      badge: 'Plano Comercial R$ 12/mês',
-      illustration: '🏬📈💼',
-    },
-  ];
+const POPULAR_CATEGORIES = [
+  'Restaurantes & Gastronomia',
+  'Bares, Botecos & Vida Noturna',
+  'Moda, Roupas & Acessórios',
+  'Beleza, Barbearias & Estética',
+  'Mercados, Padarias & Empórios',
+  'Turismo, Passeios & Hotelaria',
+];
 
-  const handleNext = () => {
-    if (currentSlide < slides.length - 1) {
-      setCurrentSlide(currentSlide + 1);
+export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete, onOpenAuth }) => {
+  const [step, setStep] = useState<'welcome' | 'neighborhoods' | 'categories' | 'permissions'>('welcome');
+  const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>(['Barra', 'Rio Vermelho']);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['Restaurantes & Gastronomia']);
+  const [gpsGranted, setGpsGranted] = useState(false);
+  const [pushGranted, setPushGranted] = useState(false);
+
+  const toggleNeighborhood = (n: string) => {
+    if (selectedNeighborhoods.includes(n)) {
+      setSelectedNeighborhoods(selectedNeighborhoods.filter((item) => item !== n));
     } else {
-      onComplete();
+      setSelectedNeighborhoods([...selectedNeighborhoods, n]);
     }
   };
 
-  const handlePrev = () => {
-    if (currentSlide > 0) {
-      setCurrentSlide(currentSlide - 1);
+  const toggleCategory = (c: string) => {
+    if (selectedCategories.includes(c)) {
+      setSelectedCategories(selectedCategories.filter((item) => item !== c));
+    } else {
+      setSelectedCategories([...selectedCategories, c]);
     }
   };
 
-  const current = slides[currentSlide];
-  const IconComponent = current.icon;
+  const handleRequestGps = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        () => setGpsGranted(true),
+        () => setGpsGranted(true) // Simula consentimento
+      );
+    } else {
+      setGpsGranted(true);
+    }
+  };
+
+  const handleRequestPush = () => {
+    if ('Notification' in window) {
+      Notification.requestPermission().then(() => {
+        setPushGranted(true);
+      });
+    } else {
+      setPushGranted(true);
+    }
+  };
+
+  const handleFinish = () => {
+    try {
+      localStorage.setItem('salvo_onboarding_done', 'true');
+      localStorage.setItem('salvo_fav_neighborhoods', JSON.stringify(selectedNeighborhoods));
+      localStorage.setItem('salvo_fav_categories', JSON.stringify(selectedCategories));
+    } catch {}
+    onComplete();
+  };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between">
-      {/* Top Bonfim Ribbon */}
-      <BonfimRibbon height="h-2" />
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between relative overflow-hidden font-sans">
+      <WavesPattern intensity="soft" />
+      <MaresRibbon />
 
-      {/* Top Header with Skip Button */}
-      <header className="max-w-md mx-auto w-full px-6 pt-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <img
-            src="/salvo-logo.png"
-            alt="SALVÔ"
-            className="w-8 h-8 rounded-xl object-cover border border-slate-200"
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src = 'https://iili.io/CDs6WS1.jpg';
-            }}
-          />
-          <span className="font-heading font-black text-sm text-[#0B4F8A]">SALVÔ</span>
-        </div>
-
-        <button
-          onClick={onComplete}
-          className="text-xs font-bold text-slate-500 hover:text-[#0B4F8A] uppercase tracking-wider py-1.5 px-3 rounded-xl hover:bg-slate-100 transition-all"
-        >
-          Pular Tutorial
-        </button>
-      </header>
-
-      {/* Main Slide Card Container */}
-      <main className="max-w-md mx-auto w-full px-6 py-6 flex-1 flex flex-col justify-center">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200 relative overflow-hidden">
-          {/* Subtle Top Accent Color Line */}
-          <div
-            className="absolute top-0 left-0 right-0 h-1.5 transition-colors duration-300"
-            style={{ backgroundColor: current.color }}
-          />
-
-          {/* Badge & Step indicator */}
-          <div className="flex items-center justify-between mb-6">
-            <span
-              className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider text-white shadow-2xs"
-              style={{ backgroundColor: current.color }}
-            >
-              {current.badge}
-            </span>
-            <span className="text-xs font-black text-slate-400">
-              Passo {currentSlide + 1} de {slides.length}
-            </span>
-          </div>
-
-          {/* Graphic Icon Box */}
-          <div className="flex flex-col items-center justify-center my-4">
-            <div
-              className={`w-28 h-28 rounded-3xl ${current.accentBg} flex items-center justify-center mb-3 shadow-inner relative transition-transform duration-300 transform scale-100 hover:scale-105`}
-            >
-              <span className="text-4xl">{current.illustration}</span>
+      <div className="max-w-md mx-auto w-full px-5 py-8 flex-1 flex flex-col justify-between z-10">
+        {/* Step Indicator */}
+        <div className="flex items-center justify-between gap-2 mb-6">
+          <div className="flex items-center gap-1.5">
+            {['welcome', 'neighborhoods', 'categories', 'permissions'].map((st, i) => (
               <div
-                className="absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-md"
-                style={{ backgroundColor: current.color }}
-              >
-                <IconComponent className="w-5 h-5" />
-              </div>
-            </div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-              {current.subtitle}
-            </p>
-          </div>
-
-          {/* Texts */}
-          <div className="text-center mb-6">
-            <h2 className="font-heading font-black text-2xl text-slate-900 leading-tight mb-3">
-              {current.title}
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              {current.description}
-            </p>
-          </div>
-
-          {/* Dots Indicator */}
-          <div className="flex items-center justify-center gap-2 mb-6">
-            {slides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  index === currentSlide
-                    ? 'w-8 bg-[#0B4F8A]'
-                    : 'w-2 bg-slate-200 hover:bg-slate-300'
+                key={st}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  step === st ? 'w-8 bg-[#E89F3C]' : 'w-3 bg-slate-800'
                 }`}
-                title={`Ir para o slide ${index + 1}`}
               />
             ))}
           </div>
+          <button
+            onClick={onOpenAuth}
+            className="text-xs font-bold text-cyan-300 hover:text-cyan-200 uppercase tracking-wider"
+          >
+            Já tenho conta
+          </button>
+        </div>
 
-          {/* Next / Back Buttons */}
-          <div className="flex items-center gap-3">
-            {currentSlide > 0 && (
-              <button
-                onClick={handlePrev}
-                className="h-12 px-4 rounded-2xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs flex items-center justify-center transition-all active:scale-95"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                <span>Voltar</span>
-              </button>
-            )}
+        {/* Step 1: Welcome */}
+        {step === 'welcome' && (
+          <div className="flex-1 flex flex-col justify-center animate-in fade-in duration-300">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#0F4C81] to-[#2A9D8F] flex items-center justify-center text-2xl shadow-xl shadow-cyan-900/30 mb-4">
+              🌊
+            </div>
 
+            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 w-fit mb-2">
+              SuperApp Urbano & Comercial
+            </span>
+
+            <h1 className="text-3xl font-black font-display tracking-tight text-white mb-2 leading-tight">
+              O mapa vivo do comércio de Salvador.
+            </h1>
+
+            <p className="text-xs text-slate-300 leading-relaxed mb-6">
+              Descubra onde tem oferta agora, navegue até a loja física e pague menos. Tudo no ritmo das marés de Salvador.
+            </p>
+
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col gap-2.5 text-xs text-slate-300">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Geolocalização precisa e ofertas relâmpago</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Navegação de destino sem complicação</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Gamificação de Marés (🌊) e Conchas (🐚)</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Bairros Favoritos */}
+        {step === 'neighborhoods' && (
+          <div className="flex-1 flex flex-col justify-center animate-in fade-in duration-300">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-5 h-5 text-[#E89F3C]" />
+              <h2 className="text-xl font-black font-display text-white">Quais bairros você mais frequenta?</h2>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">
+              Personalize o feed para ver promoções e comércios que estão no seu caminho.
+            </p>
+
+            <div className="flex flex-wrap gap-2 max-h-72 overflow-y-auto pr-1">
+              {POPULAR_NEIGHBORHOODS.map((neighborhood) => {
+                const isSelected = selectedNeighborhoods.includes(neighborhood);
+                return (
+                  <button
+                    key={neighborhood}
+                    type="button"
+                    onClick={() => toggleNeighborhood(neighborhood)}
+                    className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all ${
+                      isSelected
+                        ? 'bg-[#0F4C81] text-white border-2 border-cyan-400 shadow-md shadow-cyan-900/40'
+                        : 'bg-slate-900 border border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    {isSelected ? '✓ ' : '+ '}
+                    {neighborhood}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Categorias de Interesse */}
+        {step === 'categories' && (
+          <div className="flex-1 flex flex-col justify-center animate-in fade-in duration-300">
+            <div className="flex items-center gap-2 mb-2">
+              <Tag className="w-5 h-5 text-[#2A9D8F]" />
+              <h2 className="text-xl font-black font-display text-white">O que você mais busca?</h2>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">
+              Selecione suas categorias favoritas para receber cupons direcionados.
+            </p>
+
+            <div className="grid grid-cols-1 gap-2.5">
+              {POPULAR_CATEGORIES.map((category) => {
+                const isSelected = selectedCategories.includes(category);
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => toggleCategory(category)}
+                    className={`p-3.5 rounded-2xl text-xs font-bold text-left transition-all flex items-center justify-between ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-[#0F4C81] to-[#2A9D8F] text-white border border-cyan-300'
+                        : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <span>{category}</span>
+                    {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-200" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Permissões */}
+        {step === 'permissions' && (
+          <div className="flex-1 flex flex-col justify-center animate-in fade-in duration-300">
+            <h2 className="text-xl font-black font-display text-white mb-1">Para Salvador funcionar 100%</h2>
+            <p className="text-xs text-slate-400 mb-6">
+              Habilite as permissões para ver o mapa com as lojas em tempo real e receber alertas de maré alta e promoções relâmpago.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-950 text-cyan-400 flex items-center justify-center">
+                    <Navigation className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-white">Geolocalização GPS</h3>
+                    <p className="text-[11px] text-slate-400">Para calcular distância e rota até as lojas</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRequestGps}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider ${
+                    gpsGranted ? 'bg-emerald-500 text-white' : 'bg-[#0F4C81] text-cyan-200'
+                  }`}
+                >
+                  {gpsGranted ? 'Ativo ✓' : 'Permitir'}
+                </button>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-950 text-amber-400 flex items-center justify-center">
+                    <Bell className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-white">Notificações Push</h3>
+                    <p className="text-[11px] text-slate-400">Para alertas de Maré Cheia e cupons próximos</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRequestPush}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider ${
+                    pushGranted ? 'bg-emerald-500 text-white' : 'bg-[#E89F3C] text-slate-950'
+                  }`}
+                >
+                  {pushGranted ? 'Ativo ✓' : 'Permitir'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bottom Actions */}
+        <div className="pt-6 border-t border-slate-900 flex items-center gap-3">
+          {step === 'welcome' && (
             <button
-              onClick={handleNext}
-              className="flex-1 h-12 bg-[#FFC72C] hover:bg-[#f3bd24] text-[#0B4F8A] font-heading font-black text-xs uppercase tracking-wider rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-98"
+              type="button"
+              onClick={() => setStep('neighborhoods')}
+              className="w-full py-4 rounded-2xl bg-[#0F4C81] hover:bg-[#0c3e69] text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-950/50 active:scale-95 transition-all"
             >
-              <span>{currentSlide === slides.length - 1 ? 'Explorar Salvador Agora' : 'Próximo'}</span>
+              <span>Começar a Explorar</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-          </div>
-        </div>
-      </main>
+          )}
 
-      {/* Bottom Switch to Auth */}
-      <footer className="max-w-md mx-auto w-full px-6 pb-6 text-center">
-        <button
-          onClick={onOpenAuth}
-          className="text-xs font-bold text-[#0B4F8A] hover:underline"
-        >
-          Já tem uma conta ou quer cadastrar sua loja? Entrar aqui →
-        </button>
-      </footer>
+          {step === 'neighborhoods' && (
+            <button
+              type="button"
+              onClick={() => setStep('categories')}
+              className="w-full py-4 rounded-2xl bg-[#0F4C81] hover:bg-[#0c3e69] text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
+            >
+              <span>Continuar</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+
+          {step === 'categories' && (
+            <button
+              type="button"
+              onClick={() => setStep('permissions')}
+              className="w-full py-4 rounded-2xl bg-[#0F4C81] hover:bg-[#0c3e69] text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all"
+            >
+              <span>Continuar</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+
+          {step === 'permissions' && (
+            <button
+              type="button"
+              onClick={handleFinish}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#E89F3C] via-[#E76F51] to-[#0F4C81] text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-amber-950/40 active:scale-95 transition-all"
+            >
+              <span>Entrar no SALVÔ</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

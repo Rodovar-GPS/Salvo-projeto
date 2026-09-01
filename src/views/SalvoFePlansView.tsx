@@ -219,35 +219,38 @@ export const SalvoFePlansView: React.FC<SalvoFePlansViewProps> = ({
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
       {/* =========================================================================
-          HERO BANNER SALVÔ ADS (Identidade: Confiança, Acolhimento e Crescimento)
-          Sem menção a carnaval, axé ou trio elétrico.
+          HERO BANNER SALVÔ ADS — A CIDADE DAS MARÉS
+          "Não deixe seu negócio na maré baixa. Suba com a gente."
           ========================================================================= */}
-      <section className="relative bg-gradient-to-br from-[#0B3D91] via-[#0E4DA4] to-[#1E3A8A] text-white pt-12 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Glows Decorativos em Dourado e Azul */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#FFC72C]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+      <section className="relative bg-gradient-to-br from-[#0F4C81] via-[#1A5B96] to-[#1A1A2E] text-white pt-12 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* Padrão de Ondas Abstratas */}
+        <div className="absolute inset-0 opacity-15 pointer-events-none">
+          <svg className="w-full h-full" viewBox="0 0 1440 320" preserveAspectRatio="none">
+            <path fill="#2A9D8F" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,218.7C672,203,768,149,864,138.7C960,128,1056,160,1152,176C1248,192,1344,192,1392,192L1440,192L1440,320L0,320Z"></path>
+          </svg>
+        </div>
 
         <div className="max-w-6xl mx-auto relative z-10">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-10">
             <div className="space-y-4 max-w-2xl text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[#FFC72C] text-xs font-heading font-extrabold uppercase tracking-wider">
-                <Sparkles className="w-4 h-4 text-[#FFC72C]" />
-                SALVÔ ADS • Tráfego Pago & Crescimento do Comércio
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[#E89F3C] text-xs font-heading font-extrabold uppercase tracking-wider">
+                <Sparkles className="w-4 h-4 text-[#E89F3C]" />
+                SALVÔ ADS • A Cidade das Marés
               </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-black tracking-tight leading-tight text-white">
-                Multiplique suas vendas em Salvador com <span className="text-[#FFC72C]">Anúncios de Alta Relevância</span>
+                Não deixe seu negócio na maré baixa. <span className="text-[#E89F3C]">Suba com a gente.</span>
               </h1>
 
               <p className="text-base sm:text-lg text-blue-100 font-medium leading-relaxed">
-                Conecte seu negócio aos clientes certos no momento exato da decisão de compra. 
-                Tecnologia de leilão hyperlocal <strong>Fé Engine</strong>, gestão profissional inclusa e transparência absoluta.
+                Conecte seu comércio ou serviço ao fluxo real de soteropolitanos e turistas em Salvador. 
+                Tecnologia de leilão hyperlocal <strong>Salvô Engine</strong>, gestão profissional inclusa e transparência absoluta.
               </p>
 
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
                 <a
                   href="#planos"
-                  className="px-6 py-3.5 rounded-2xl bg-[#FFC72C] hover:bg-[#ffcf4d] text-[#0B3D91] font-heading font-black text-sm shadow-xl active:scale-95 transition-all flex items-center gap-2"
+                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#E89F3C] to-[#E76F51] hover:opacity-90 text-white font-heading font-black text-sm shadow-xl active:scale-95 transition-all flex items-center gap-2"
                 >
                   <Zap className="w-4 h-4" />
                   Ver Planos de Anúncios
@@ -257,8 +260,8 @@ export const SalvoFePlansView: React.FC<SalvoFePlansViewProps> = ({
                   onClick={() => setIsSimulatorOpen(true)}
                   className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-heading font-bold text-sm border border-white/30 backdrop-blur-md active:scale-95 transition-all flex items-center gap-2"
                 >
-                  <Sliders className="w-4 h-4 text-[#FFC72C]" />
-                  Simular Leilão Fé Engine
+                  <Sliders className="w-4 h-4 text-[#E89F3C]" />
+                  Simular Alcance por Maré
                 </button>
 
                 {onNavigateToAdmin && (
@@ -266,7 +269,7 @@ export const SalvoFePlansView: React.FC<SalvoFePlansViewProps> = ({
                     onClick={onNavigateToAdmin}
                     className="px-5 py-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 text-blue-200 hover:text-white font-heading font-semibold text-xs border border-blue-400/30 transition-all flex items-center gap-1.5"
                   >
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <ShieldCheck className="w-4 h-4 text-[#2A9D8F]" />
                     Acesso Painel Admin
                   </button>
                 )}
@@ -276,8 +279,8 @@ export const SalvoFePlansView: React.FC<SalvoFePlansViewProps> = ({
             {/* Destaques de Confiança */}
             <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-white/20 shadow-2xl max-w-sm w-full space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#FFC72C] flex items-center justify-center text-[#0B3D91] font-black">
-                  <ShieldCheck className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-2xl bg-[#E89F3C] flex items-center justify-center text-slate-950 font-black">
+                  <ShieldCheck className="w-6 h-6 text-slate-950" />
                 </div>
                 <div>
                   <h3 className="font-heading font-bold text-white text-sm">Gestão Profissional Fixa</h3>
@@ -286,8 +289,8 @@ export const SalvoFePlansView: React.FC<SalvoFePlansViewProps> = ({
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-400 flex items-center justify-center text-emerald-950 font-black">
-                  <TrendingUp className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-2xl bg-[#2A9D8F] flex items-center justify-center text-white font-black">
+                  <TrendingUp className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h3 className="font-heading font-bold text-white text-sm">Retorno por Clique & Mil</h3>
@@ -296,12 +299,12 @@ export const SalvoFePlansView: React.FC<SalvoFePlansViewProps> = ({
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-400 flex items-center justify-center text-amber-950 font-black">
-                  <MapPin className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-2xl bg-[#E76F51] flex items-center justify-center text-white font-black">
+                  <MapPin className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h3 className="font-heading font-bold text-white text-sm">Hiperlocalização Salvador</h3>
-                  <p className="text-xs text-blue-100">Segmentação por bairros: Barra, Pituba, Graça e mais</p>
+                  <p className="text-xs text-blue-100">Segmentação por bairros: Barra, Pituba, Rio Vermelho e mais</p>
                 </div>
               </div>
             </div>

@@ -9,16 +9,16 @@ import {
 } from '../types';
 
 // =========================================================================
-// 🕊️ PLANOS OFICIAIS SALVÓ FÉ — TRÁFEGO PAGO E CRESCIMENTO ÉTICO
-// Identidade: Confiança, Acolhimento, Energia Positiva e Prosperidade
+// 🌊 PLANOS OFICIAIS SALVÓ ADS — A CIDADE DAS MARÉS
+// "Não deixe seu negócio na maré baixa. Suba com a gente."
 // =========================================================================
 export const FE_MANAGEMENT_FEE_MONTHLY = 150.0;
 
 export const FE_PLANS: Record<FePlanTier, FePlanDefinition> = {
-  local: {
-    id: 'local',
-    name: 'Fé Local',
-    tagline: 'Ideal para comércios de bairro que desejam atrair clientes vizinhos com alta taxa de conversão.',
+  orla: {
+    id: 'orla',
+    name: 'Orla (Básico)',
+    tagline: 'Visibilidade na beira — quem passa por perto da sua loja te vê primeiro.',
     price: 197.0,
     managementFee: FE_MANAGEMENT_FEE_MONTHLY,
     netMediaBudget: 47.0, // R$ 197 - R$ 150
@@ -26,23 +26,23 @@ export const FE_PLANS: Record<FePlanTier, FePlanDefinition> = {
     cpm: 10.00, // Custo por Mil Impressões R$ 10,00
     estimatedClicks: 94, // 47 / 0.50
     estimatedImpressions: 4700, // (47 / 10) * 1000
-    targetScope: '1 a 3 Bairros Focados',
-    badge: 'INICIANTE ESSENCIAL',
-    color: '#0B3D91',
+    targetScope: 'Visibilidade na Beira (1 a 3 Bairros)',
+    badge: 'ORLA ESSENCIAL',
+    color: '#0F4C81',
     benefits: [
+      'Visibilidade na beira — quem passa por perto te vê',
       'Segmentação hiperlocal em até 3 bairros de Salvador',
       'Custo por Clique (CPC) fixado em R$ 0,50',
       'Custo por Mil Impressões (CPM) em R$ 10,00',
       'Taxa de Gestão Inclusa (R$ 150/mês)',
       'Banner Patrocinado no feed principal e busca local',
       'Direcionamento direto para o WhatsApp ou Loja',
-      'Aprovação rápida e suporte humanizado via painel',
     ],
   },
-  plus: {
-    id: 'plus',
-    name: 'Fé Plus',
-    tagline: 'Expansão regional para empresas que atendem múltiplos bairros e querem liderança nas buscas.',
+  mare_alta: {
+    id: 'mare_alta',
+    name: 'Maré Alta (Intermediário)',
+    tagline: 'Destaque no mapa e feed para liderar o fluxo de clientes na região.',
     price: 347.0,
     managementFee: FE_MANAGEMENT_FEE_MONTHLY,
     netMediaBudget: 197.0, // R$ 347 - R$ 150
@@ -50,25 +50,24 @@ export const FE_PLANS: Record<FePlanTier, FePlanDefinition> = {
     cpm: 9.00, // Custo por Mil Impressões R$ 9,00
     estimatedClicks: 438, // 197 / 0.45
     estimatedImpressions: 21888, // (197 / 9) * 1000
-    targetScope: 'Múltiplos Bairros & Polos Regionais',
-    badge: 'MAIS CONTRATADO',
+    targetScope: 'Destaque no Mapa & Feed (Polos Comerciais)',
+    badge: 'MARÉ MAIS CONTRATADA',
     isPopular: true,
-    color: '#D97706',
+    color: '#E89F3C',
     benefits: [
+      'Destaque no mapa e feed interativo de Salvador',
       'Segmentação avançada em até 8 bairros e polos comerciais',
       'Custo por Clique (CPC) reduzido para R$ 0,45',
       'Custo por Mil Impressões (CPM) reduzido para R$ 9,00',
       'Taxa de Gestão Inclusa (R$ 150/mês)',
-      'Destaque no topo dos resultados de busca e mapa interativo',
       'Pixel de conversão e link com rastreamento UTM',
-      'Relatório semanal de desempenho e audiência',
-      'Suporte prioritário via WhatsApp',
+      'Relatório semanal de desempenho e audiência das marés',
     ],
   },
-  premium: {
-    id: 'premium',
-    name: 'Fé Premium',
-    tagline: 'Autoridade e cobertura máxima em toda Salvador com prioridade absoluta no leilão Fé Engine.',
+  fundo_do_mar: {
+    id: 'fundo_do_mar',
+    name: 'Fundo do Mar (Premium)',
+    tagline: 'Domínio total — anúncios em todos os módulos, integração com câmeras e rádio ao vivo.',
     price: 597.0,
     managementFee: FE_MANAGEMENT_FEE_MONTHLY,
     netMediaBudget: 447.0, // R$ 597 - R$ 150
@@ -76,20 +75,68 @@ export const FE_PLANS: Record<FePlanTier, FePlanDefinition> = {
     cpm: 8.00, // Custo por Mil Impressões VIP R$ 8,00
     estimatedClicks: 1118, // 447 / 0.40
     estimatedImpressions: 55875, // (447 / 8) * 1000
-    targetScope: 'Salvador Inteira (Alcance Máximo)',
-    badge: 'IMPACTO MÁXIMO',
-    color: '#047857',
+    targetScope: 'Domínio Total (Módulos, Câmeras & Rádio)',
+    badge: 'DOMÍNIO TOTAL',
+    color: '#2A9D8F',
     benefits: [
+      'Domínio total — anúncios em todos os 19 módulos do SuperApp',
+      'Integração exclusiva com player de rádios e câmeras públicas ao vivo',
       'Alcance em todos os bairros e zonas turísticas de Salvador',
       'Custo por Clique (CPC) VIP de apenas R$ 0,40',
       'Custo por Mil Impressões (CPM) de apenas R$ 8,00',
-      'Taxa de Gestão Inclusa (R$ 150/mês)',
-      'Prioridade Máxima no Algoritmo de Leilão Fé Engine (Score Multiplicador)',
-      'Selo dourado de Anunciante Verificado SALVÔ ADS',
-      'Banner em destaque na página inicial, feed e rotas',
+      'Prioridade Máxima no Algoritmo de Leilão Salvô Engine',
+      'Selo Gota de Dendê de Anunciante Verificado',
       'Consultoria estratégica mensal de tráfego com especialista',
-      'Painel de Métricas em tempo real e exportação em CSV',
     ],
+  },
+  // Aliases para retrocompatibilidade
+  local: {
+    id: 'local',
+    name: 'Orla (Básico)',
+    tagline: 'Visibilidade na beira — quem passa por perto te vê.',
+    price: 197.0,
+    managementFee: FE_MANAGEMENT_FEE_MONTHLY,
+    netMediaBudget: 47.0,
+    cpc: 0.50,
+    cpm: 10.00,
+    estimatedClicks: 94,
+    estimatedImpressions: 4700,
+    targetScope: 'Visibilidade na Beira (1 a 3 Bairros)',
+    badge: 'ORLA ESSENCIAL',
+    color: '#0F4C81',
+    benefits: ['Visibilidade na beira — quem passa por perto te vê'],
+  },
+  plus: {
+    id: 'plus',
+    name: 'Maré Alta (Intermediário)',
+    tagline: 'Destaque no mapa e feed.',
+    price: 347.0,
+    managementFee: FE_MANAGEMENT_FEE_MONTHLY,
+    netMediaBudget: 197.0,
+    cpc: 0.45,
+    cpm: 9.00,
+    estimatedClicks: 438,
+    estimatedImpressions: 21888,
+    targetScope: 'Destaque no Mapa & Feed',
+    badge: 'MARÉ MAIS CONTRATADA',
+    color: '#E89F3C',
+    benefits: ['Destaque no mapa e feed interativo'],
+  },
+  premium: {
+    id: 'premium',
+    name: 'Fundo do Mar (Premium)',
+    tagline: 'Domínio total — anúncios em todos os módulos.',
+    price: 597.0,
+    managementFee: FE_MANAGEMENT_FEE_MONTHLY,
+    netMediaBudget: 447.0,
+    cpc: 0.40,
+    cpm: 8.00,
+    estimatedClicks: 1118,
+    estimatedImpressions: 55875,
+    targetScope: 'Domínio Total',
+    badge: 'DOMÍNIO TOTAL',
+    color: '#2A9D8F',
+    benefits: ['Domínio total em todos os módulos'],
   },
 };
 

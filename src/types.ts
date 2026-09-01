@@ -742,14 +742,115 @@ export interface SalvadorTransitOption {
 }
 
 // ==========================================
-// 🕊️ SALVÓ FÉ — SISTEMA DE TRÁFEGO PAGO & ANÚNCIOS
+// 🌊 A CIDADE DAS MARÉS — SISTEMA DE GAMIFICAÇÃO (MARÉS & CONCHAS)
 // ==========================================
 
-export type FePlanTier = 'local' | 'plus' | 'premium';
+export type DepthLevelTitle =
+  | 'Orla'
+  | 'Abismo do Carmo'
+  | 'Fossa das Marianas Soteropolitana';
+
+export type ConchaType = 'areia' | 'mar' | 'vidro';
+
+export interface ConchaItem {
+  id: string;
+  type: ConchaType;
+  name: string;
+  rarity: 'Comum' | 'Rara' | 'Lendária';
+  collectedAt: string;
+  neighborhood: string;
+  iconName: string;
+}
+
+export interface UserMaresGamification {
+  maresScore: number; // Moeda/Score 🌊
+  streakDays: number;
+  streakStatus: 'mare_cheia' | 'mare_normal' | 'mare_baixa';
+  depthLevel: number; // 1 to 10
+  depthTitle: DepthLevelTitle;
+  conchasCount: number; // Total de conchas para fechar o ciclo de 7
+  conchasCollection: ConchaItem[];
+  availableRewards: {
+    id: string;
+    title: string;
+    partnerName: string;
+    partnerLogo?: string;
+    discountPercent: number;
+    code: string;
+    expiresAt: string;
+    isUsed: boolean;
+  }[];
+  neighborhoodRanks: {
+    neighborhood: string;
+    rank: number;
+    title: string; // "Quem manda na maré do Rio Vermelho"
+    totalResidents: number;
+  }[];
+}
+
+// Mecânicas de Retenção & Vício
+export interface AcarajeRouletteResult {
+  id: string;
+  storeId: string;
+  storeName: string;
+  storeNeighborhood: string;
+  secretDiscountPercent: number; // 20%
+  dishCategory: string;
+  hintText: string;
+  distanceKm: number;
+  unlockedAtArrival: boolean;
+  code: string;
+  expiresInMinutes: number;
+}
+
+export interface OndaDoDendeItem {
+  id: string;
+  title: string;
+  venue: string;
+  neighborhood: string;
+  participantsCount: number;
+  waveHeatIndex: 'Marola' | 'Onda Média' | 'Tsunami do Dendê';
+  heatPercentage: number;
+  bannerImage: string;
+  liveNow: boolean;
+  timeText: string;
+}
+
+export interface HerancaDigitalRecado {
+  id: string;
+  authorName: string;
+  authorAvatar?: string;
+  neighborhood: string;
+  locationName: string;
+  coordinates: { lat: number; lng: number };
+  message: string;
+  createdAt: string;
+  likesCount: number;
+  tag: string;
+}
+
+export interface PrevisaoMareData {
+  currentTideMeters: number;
+  tideState: 'Maré Alta (Preamar)' | 'Maré Baixa (Baixa-mar)' | 'Maré Enchendo' | 'Maré Vazando';
+  nextHighTide: string;
+  nextLowTide: string;
+  marinhaAdvisory: string;
+  riskFloodZones: {
+    zoneName: string;
+    riskLevel: 'Baixo' | 'Médio' | 'Alto (Alerta Contorno / Calçada)';
+    alternativeRoute: string;
+  }[];
+}
+
+// ==========================================
+// 🌊 PLANOS PUBLICITÁRIOS SALVÓ ADS — A CIDADE DAS MARÉS
+// ==========================================
+
+export type FePlanTier = 'orla' | 'mare_alta' | 'fundo_do_mar' | 'local' | 'plus' | 'premium';
 
 export interface FePlanDefinition {
   id: FePlanTier;
-  name: string; // "Fé Local", "Fé Plus", "Fé Premium"
+  name: string; // "Orla", "Maré Alta", "Fundo do Mar"
   tagline: string;
   price: number; // 197, 347, 597
   managementFee: number; // 150.00 fixo
@@ -758,7 +859,7 @@ export interface FePlanDefinition {
   cpm: number; // 10.00, 9.00, 8.00
   estimatedClicks: number; // netMediaBudget / cpc
   estimatedImpressions: number; // (netMediaBudget / cpm) * 1000
-  targetScope: string; // "1 a 3 Bairros", "Multi-Bairros / Polos", "Salvador Inteira"
+  targetScope: string; // "Visibilidade na Beira", "Destaque no Mapa & Feed", "Domínio Total (Módulos, Câmeras & Rádio)"
   badge: string;
   color: string;
   benefits: string[];

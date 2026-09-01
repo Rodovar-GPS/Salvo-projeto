@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { User, Store, Friendship, UserFollow, SocialNotification, ActiveTab } from '../types';
-import { BonfimRibbon } from '../components/BonfimRibbon';
+import { WavesPattern, SalvadorSkylineSilhouette, GotaDeDendeBadge } from '../components/MaresPattern';
+import { MaresGamificationPanel } from '../components/MaresGamificationPanel';
 import { ClearableInput } from '../components/ClearableInput';
 import { SocialConnectionsModal } from '../components/social/SocialConnectionsModal';
 import { UserSearchModal } from '../components/social/UserSearchModal';
@@ -681,15 +682,15 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
           {/* PROFILE HEADER CARD */}
           <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
             {/* Cover Banner */}
-            <div className="h-36 sm:h-48 bg-gradient-to-r from-[#0B3D91] via-[#1856BD] to-[#C1502E] relative">
-              <div className="absolute inset-0 bg-black/10" />
-              <BonfimRibbon height="h-1.5" />
+            <div className="h-36 sm:h-48 bg-gradient-to-r from-[#0F4C81] via-[#2A9D8F] to-[#E89F3C] relative overflow-hidden">
+              <WavesPattern intensity="soft" />
+              <SalvadorSkylineSilhouette className="opacity-30" />
 
               {/* Cover Top Badges */}
-              <div className="absolute top-4 right-4 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wider bg-white/95 text-[#0B3D91] backdrop-blur-md shadow-xs">
-                  <Sparkles className="w-3.5 h-3.5 text-[#FFC72C]" />
-                  <span>Comunidade Salvador</span>
+              <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wider bg-white/95 text-[#0F4C81] backdrop-blur-md shadow-xs">
+                  <Sparkles className="w-3.5 h-3.5 text-[#E89F3C]" />
+                  <span>A Cidade das Marés</span>
                 </span>
               </div>
             </div>
@@ -975,6 +976,11 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
               </div>
             </div>
           </div>
+
+          {/* =========================================================
+              PAINEL DE GAMIFICAÇÃO: MARÉS & CONCHAS
+          ========================================================= */}
+          <MaresGamificationPanel />
 
           {/* CLIENT SUB-TABS (PUBLICAÇÕES, FOTOS, VÍDEOS, ÁLBUNS, LUGARES) */}
           <div className="bg-white rounded-3xl border border-slate-200 p-2 shadow-2xs">
@@ -1470,7 +1476,7 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
                     className="w-full h-full object-cover opacity-85"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <BonfimRibbon height="h-1.5" />
+                  <WavesPattern intensity="soft" />
 
                   {/* Open Status & Badges */}
                   <div className="absolute top-4 right-4 flex items-center gap-2">

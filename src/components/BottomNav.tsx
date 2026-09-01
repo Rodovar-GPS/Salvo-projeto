@@ -1,6 +1,11 @@
+// ==============================================================================
+// 🗺️ BOTTOM NAV — 5 ABAS FIXAS DO SUPERAPP SALVÔ (A CIDADE DAS MARÉS)
+// [ Início 🗺️ ]  [ Ofertas 🏷️ ]  [ Viajar 🧭 ]  [ Chat 💬 ]  [ Perfil 👤 ]
+// ==============================================================================
+
 import React from 'react';
 import { ActiveTab, User } from '../types';
-import { Home, Compass, MapPin, Sparkles, MessageSquare, Heart, Store, User as UserIcon, Calendar, Map as MapIcon, Navigation } from 'lucide-react';
+import { Compass, Tag, Navigation, MessageSquare, User as UserIcon } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab?: ActiveTab;
@@ -23,35 +28,33 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   userRole,
   unreadCount: rawUnreadCount,
   unreadChatCount,
-  favoritesCount = 0,
 }) => {
   const activeTab = rawActiveTab || currentTab || 'explore';
   const setActiveTab = rawSetActiveTab || setCurrentTab || (() => {});
   const unreadCount = unreadChatCount !== undefined ? unreadChatCount : (rawUnreadCount || 0);
-  const role = currentUser?.role || userRole || 'client';
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}
-      aria-label="Navegação Principal Mobile"
+      aria-label="Navegação Principal do SuperApp"
     >
       <div className="max-w-md mx-auto px-2 h-16 flex items-center justify-around">
-        {/* 1. Início */}
+        {/* 1. Início 🗺️ */}
         <button
           onClick={() => {
             setActiveTab('explore');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] ${
+          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] cursor-pointer ${
             activeTab === 'explore'
-              ? 'text-[#0B3D91]'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-[#0F4C81] dark:text-cyan-400'
+              : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
           }`}
           aria-label="Início"
         >
           <div className="relative">
-            <Home
+            <Compass
               className={`w-5 h-5 transition-transform ${
                 activeTab === 'explore' ? 'stroke-[2.5] scale-110' : 'stroke-[1.75]'
               }`}
@@ -59,26 +62,67 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           </div>
           <span
             className={`text-[10px] mt-1 leading-none tracking-tight ${
-              activeTab === 'explore' ? 'font-black text-[#0B3D91]' : 'font-semibold text-slate-500'
+              activeTab === 'explore'
+                ? 'font-black text-[#0F4C81] dark:text-cyan-400'
+                : 'font-semibold text-slate-500'
             }`}
           >
             Início
           </span>
           {activeTab === 'explore' && (
-            <span className="w-1 h-1 rounded-full bg-[#0B3D91] mt-0.5" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0F4C81] dark:bg-cyan-400 mt-0.5" />
           )}
         </button>
 
-        {/* 2. Viajar GPS (Uber / 99 Style) */}
+        {/* 2. Ofertas 🏷️ */}
+        <button
+          onClick={() => {
+            setActiveTab('offers');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] cursor-pointer ${
+            activeTab === 'offers'
+              ? 'text-[#E89F3C] dark:text-amber-400'
+              : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+          aria-label="Ofertas"
+        >
+          <div className="relative">
+            <Tag
+              className={`w-5 h-5 transition-transform ${
+                activeTab === 'offers'
+                  ? 'text-[#E89F3C] dark:text-amber-400 stroke-[2.5] scale-110'
+                  : 'stroke-[1.75]'
+              }`}
+            />
+            <span className="absolute -top-1 -right-2 bg-gradient-to-r from-[#E89F3C] to-[#E76F51] text-white text-[7px] font-black px-1 rounded-full animate-pulse">
+              %
+            </span>
+          </div>
+          <span
+            className={`text-[10px] mt-1 leading-none tracking-tight ${
+              activeTab === 'offers'
+                ? 'font-black text-[#E89F3C] dark:text-amber-400'
+                : 'font-semibold text-slate-500'
+            }`}
+          >
+            Ofertas
+          </span>
+          {activeTab === 'offers' && (
+            <span className="w-1.5 h-1.5 rounded-full bg-[#E89F3C] dark:bg-amber-400 mt-0.5" />
+          )}
+        </button>
+
+        {/* 3. Viajar 🧭 */}
         <button
           onClick={() => {
             setActiveTab('viajar');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] ${
+          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] cursor-pointer ${
             activeTab === 'viajar'
-              ? 'text-[#0B4F8A]'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-[#2A9D8F] dark:text-teal-400'
+              : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
           }`}
           aria-label="Viajar GPS"
         >
@@ -86,70 +130,38 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <Navigation
               className={`w-5 h-5 transition-transform ${
                 activeTab === 'viajar'
-                  ? 'text-[#0B4F8A] fill-[#0B4F8A] stroke-[2.5] scale-110'
-                  : 'text-slate-500 stroke-[1.75]'
+                  ? 'text-[#2A9D8F] dark:text-teal-400 fill-[#2A9D8F]/20 stroke-[2.5] scale-110'
+                  : 'stroke-[1.75]'
               }`}
             />
-            <span className="absolute -top-1 -right-2 bg-emerald-500 text-white text-[7px] font-black px-1 rounded-full">
+            <span className="absolute -top-1 -right-2 bg-[#2A9D8F] text-white text-[7px] font-black px-1 rounded-full">
               GPS
             </span>
           </div>
           <span
             className={`text-[10px] mt-1 leading-none tracking-tight ${
-              activeTab === 'viajar' ? 'font-black text-[#0B4F8A]' : 'font-semibold text-slate-500'
+              activeTab === 'viajar'
+                ? 'font-black text-[#2A9D8F] dark:text-teal-400'
+                : 'font-semibold text-slate-500'
             }`}
           >
             Viajar
           </span>
           {activeTab === 'viajar' && (
-            <span className="w-1 h-1 rounded-full bg-[#0B4F8A] mt-0.5" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2A9D8F] dark:bg-teal-400 mt-0.5" />
           )}
         </button>
 
-        {/* 3. Ofertas */}
-        <button
-          onClick={() => {
-            setActiveTab('offers');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] ${
-            activeTab === 'offers'
-              ? 'text-[#0B3D91]'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-          aria-label="Ofertas"
-        >
-          <div className="relative">
-            <Sparkles
-              className={`w-5 h-5 transition-transform ${
-                activeTab === 'offers'
-                  ? 'text-[#C1502E] stroke-[2.5] scale-110'
-                  : 'text-[#C1502E] stroke-[1.75]'
-              }`}
-            />
-          </div>
-          <span
-            className={`text-[10px] mt-1 leading-none tracking-tight ${
-              activeTab === 'offers' ? 'font-black text-[#0B3D91]' : 'font-semibold text-slate-500'
-            }`}
-          >
-            Ofertas
-          </span>
-          {activeTab === 'offers' && (
-            <span className="w-1 h-1 rounded-full bg-[#C1502E] mt-0.5" />
-          )}
-        </button>
-
-        {/* 4. Chat */}
+        {/* 4. Chat 💬 */}
         <button
           onClick={() => {
             setActiveTab('chat');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] ${
+          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] cursor-pointer ${
             activeTab === 'chat'
-              ? 'text-[#0B3D91]'
-              : 'text-slate-500 hover:text-slate-800'
+              ? 'text-[#0F4C81] dark:text-cyan-400'
+              : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
           }`}
           aria-label="Chat com Lojas"
         >
@@ -160,59 +172,58 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               }`}
             />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-2 min-w-4 h-4 px-1 bg-[#1F6E43] text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs">
+              <span className="absolute -top-1 -right-2 min-w-4 h-4 px-1 bg-[#E76F51] text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-xs">
                 {unreadCount}
               </span>
             )}
           </div>
           <span
             className={`text-[10px] mt-1 leading-none tracking-tight ${
-              activeTab === 'chat' ? 'font-black text-[#0B3D91]' : 'font-semibold text-slate-500'
+              activeTab === 'chat'
+                ? 'font-black text-[#0F4C81] dark:text-cyan-400'
+                : 'font-semibold text-slate-500'
             }`}
           >
             Chat
           </span>
           {activeTab === 'chat' && (
-            <span className="w-1 h-1 rounded-full bg-[#0B3D91] mt-0.5" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0F4C81] dark:bg-cyan-400 mt-0.5" />
           )}
         </button>
 
-        {/* 5. Favoritos */}
+        {/* 5. Perfil 👤 */}
         <button
           onClick={() => {
-            setActiveTab('favorites');
+            setActiveTab('profile');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] ${
-            activeTab === 'favorites'
-              ? 'text-[#0B3D91]'
-              : 'text-slate-500 hover:text-slate-800'
+          className={`flex-1 flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition-all select-none min-h-[48px] cursor-pointer ${
+            activeTab === 'profile' || (activeTab as string) === 'merchant_dashboard'
+              ? 'text-[#0F4C81] dark:text-cyan-400'
+              : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
           }`}
-          aria-label="Lojas Favoritas"
+          aria-label="Perfil"
         >
           <div className="relative">
-            <Heart
+            <UserIcon
               className={`w-5 h-5 transition-transform ${
-                activeTab === 'favorites'
-                  ? 'text-rose-500 fill-rose-500 scale-110'
-                  : 'text-slate-500 stroke-[1.75]'
+                activeTab === 'profile' || (activeTab as string) === 'merchant_dashboard'
+                  ? 'stroke-[2.5] scale-110'
+                  : 'stroke-[1.75]'
               }`}
             />
-            {favoritesCount > 0 && (
-              <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-rose-500 text-white text-[8px] font-black rounded-full flex items-center justify-center">
-                {favoritesCount}
-              </span>
-            )}
           </div>
           <span
             className={`text-[10px] mt-1 leading-none tracking-tight ${
-              activeTab === 'favorites' ? 'font-black text-[#0B3D91]' : 'font-semibold text-slate-500'
+              activeTab === 'profile' || (activeTab as string) === 'merchant_dashboard'
+                ? 'font-black text-[#0F4C81] dark:text-cyan-400'
+                : 'font-semibold text-slate-500'
             }`}
           >
-            Favoritos
+            Perfil
           </span>
-          {activeTab === 'favorites' && (
-            <span className="w-1 h-1 rounded-full bg-[#0B3D91] mt-0.5" />
+          {(activeTab === 'profile' || (activeTab as string) === 'merchant_dashboard') && (
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0F4C81] dark:bg-cyan-400 mt-0.5" />
           )}
         </button>
       </div>

@@ -1,56 +1,66 @@
+// ==============================================================================
+// 🌊 FAIXA DAS MARÉS DE SALVADOR — DESIGN SYSTEM "A CIDADE DAS MARÉS"
+// Padrão de ondas suaves e paleta oceânica de Salvador
+// ==============================================================================
+
 import React from 'react';
 
-interface BonfimRibbonProps {
+interface MaresRibbonProps {
   className?: string;
   height?: string;
   showText?: boolean;
 }
 
-export const BonfimRibbon: React.FC<BonfimRibbonProps> = ({
+export const MaresRibbon: React.FC<MaresRibbonProps> = ({
   className = '',
   height = 'h-2',
   showText = false,
 }) => {
   return (
     <div className={`w-full shrink-0 flex flex-col ${className}`}>
-      <div className={`flex w-full ${height} overflow-hidden shadow-sm`}>
-        {/* Fitinha Azul Salvador */}
-        <div className="flex-1 bg-[#0B4F8A] relative group" title="Lembrança do Senhor do Bonfim - Azul">
-          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
-        {/* Fitinha Branca Paz */}
-        <div className="flex-1 bg-white border-y border-slate-200" title="Lembrança do Senhor do Bonfim - Branco" />
-        {/* Fitinha Amarela Prosperidade */}
-        <div className="flex-1 bg-[#FFC72C]" title="Lembrança do Senhor do Bonfim - Amarelo" />
-        {/* Fitinha Verde Esperança */}
-        <div className="flex-1 bg-[#2E9E5B]" title="Lembrança do Senhor do Bonfim - Verde" />
-        {/* Fitinha Coral Axé */}
-        <div className="flex-1 bg-[#E8552B]" title="Lembrança do Senhor do Bonfim - Coral" />
+      <div className={`flex w-full ${height} overflow-hidden shadow-xs`}>
+        {/* Azul Mar Profundo */}
+        <div className="flex-1 bg-[#0F4C81]" title="Mar Profundo de Salvador" />
+        {/* Verde Mar / Águas Calmas */}
+        <div className="flex-1 bg-[#2A9D8F]" title="Águas Calmas da Baía de Todos os Santos" />
+        {/* Areia Dourada */}
+        <div className="flex-1 bg-[#E89F3C]" title="Areia Dourada do Farol da Barra" />
+        {/* Terracota / Pôr do Sol */}
+        <div className="flex-1 bg-[#E76F51]" title="Pôr do Sol no Porto da Barra" />
+        {/* Espuma do Mar */}
+        <div className="flex-1 bg-cyan-100" title="Espuma das Ondas" />
       </div>
       {showText && (
-        <div className="bg-slate-900 text-white/90 text-[10px] py-1 text-center font-black tracking-widest uppercase shadow-inner">
-          OS MELHORES COMERCIOS NA PALMA DA SUA MÃO.
+        <div className="bg-[#1A1A2E] text-cyan-200 text-[10px] py-1 text-center font-black tracking-widest uppercase shadow-inner">
+          SALVÓ • A CIDADE DAS MARÉS • O GUIA OFICIAL DE SALVADOR
         </div>
       )}
     </div>
   );
 };
 
-export const BonfimBadge: React.FC<{ text: string; color?: 'blue' | 'yellow' | 'coral' | 'green' }> = ({
+// Aliases para compatibilidade
+export const BonfimRibbon = MaresRibbon;
+
+export const MaresBadge: React.FC<{ text: string; color?: 'blue' | 'yellow' | 'coral' | 'green' }> = ({
   text,
   color = 'blue',
 }) => {
   const colorMap = {
-    blue: 'bg-[#0B4F8A] text-white',
-    yellow: 'bg-[#FFC72C] text-[#0B4F8A]',
-    coral: 'bg-[#E8552B] text-white',
-    green: 'bg-[#2E9E5B] text-white',
+    blue: 'bg-[#0F4C81]/10 text-[#0F4C81] border-[#0F4C81]/20',
+    yellow: 'bg-[#E89F3C]/10 text-[#E89F3C] border-[#E89F3C]/20',
+    coral: 'bg-[#E76F51]/10 text-[#E76F51] border-[#E76F51]/20',
+    green: 'bg-[#2A9D8F]/10 text-[#2A9D8F] border-[#2A9D8F]/20',
   };
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-sm ${colorMap[color]}`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80 animate-pulse"></span>
-      {text}
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${colorMap[color]}`}
+    >
+      <span>🌊</span>
+      <span>{text}</span>
     </span>
   );
 };
+
+export const BonfimBadge = MaresBadge;

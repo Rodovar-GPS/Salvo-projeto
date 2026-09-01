@@ -38,28 +38,45 @@ import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
 import { NeighborhoodGuideModal } from './components/NeighborhoodGuideModal';
 import { FloatingRadioPlayer } from './components/FloatingRadioPlayer';
+import { AcarajeRouletteModal } from './components/AcarajeRouletteModal';
+import { OndaDoDendeModal } from './components/OndaDoDendeModal';
+import { HerancaDigitalModal } from './components/HerancaDigitalModal';
+import { PrevisaoMareModal } from './components/PrevisaoMareModal';
+import { AcarajeRouletteButton } from './components/AcarajeRouletteButton';
 
-// Views
-import { SplashView } from './views/SplashView';
-import { OnboardingView } from './views/OnboardingView';
-import { AuthView } from './views/AuthView';
-import { HomeExploreView } from './views/HomeExploreView';
-import { OffersView } from './views/OffersView';
-import { StoreProfileView } from './views/StoreProfileView';
-import { ChatView } from './views/ChatView';
-import { FavoritesView } from './views/FavoritesView';
-import { UserProfileView } from './views/UserProfileView';
-import { MerchantDashboardView } from './views/MerchantDashboardView';
-import { AdminDashboardView } from './views/AdminDashboardView';
-import { MerchantRegisterView } from './views/MerchantRegisterView';
-import { EventsView } from './views/EventsView';
-import { ForYouSocialView } from './views/ForYouSocialView';
-import { SalvadorLiveView } from './views/SalvadorLiveView';
-import { SalvoOfficialView } from './views/SalvoOfficialView';
-import { SalvoFePlansView } from './views/SalvoFePlansView';
-import { SalvoFeAdminDashboardView } from './views/SalvoFeAdminDashboardView';
-import { ViajarNavView } from './views/ViajarNavView';
-import { StreetViewExperience } from './components/StreetViewExperience';
+// Views com Code-Splitting (React.lazy)
+const SplashView = React.lazy(() => import('./views/SplashView').then(m => ({ default: m.SplashView })));
+const OnboardingView = React.lazy(() => import('./views/OnboardingView').then(m => ({ default: m.OnboardingView })));
+const AuthView = React.lazy(() => import('./views/AuthView').then(m => ({ default: m.AuthView })));
+const HomeExploreView = React.lazy(() => import('./views/HomeExploreView').then(m => ({ default: m.HomeExploreView })));
+const OffersView = React.lazy(() => import('./views/OffersView').then(m => ({ default: m.OffersView })));
+const StoreProfileView = React.lazy(() => import('./views/StoreProfileView').then(m => ({ default: m.StoreProfileView })));
+const ChatView = React.lazy(() => import('./views/ChatView').then(m => ({ default: m.ChatView })));
+const FavoritesView = React.lazy(() => import('./views/FavoritesView').then(m => ({ default: m.FavoritesView })));
+const UserProfileView = React.lazy(() => import('./views/UserProfileView').then(m => ({ default: m.UserProfileView })));
+const MerchantDashboardView = React.lazy(() => import('./views/MerchantDashboardView').then(m => ({ default: m.MerchantDashboardView })));
+const AdminDashboardView = React.lazy(() => import('./views/AdminDashboardView').then(m => ({ default: m.AdminDashboardView })));
+const MerchantRegisterView = React.lazy(() => import('./views/MerchantRegisterView').then(m => ({ default: m.MerchantRegisterView })));
+const EventsView = React.lazy(() => import('./views/EventsView').then(m => ({ default: m.EventsView })));
+const ForYouSocialView = React.lazy(() => import('./views/ForYouSocialView').then(m => ({ default: m.ForYouSocialView })));
+const SalvadorLiveView = React.lazy(() => import('./views/SalvadorLiveView').then(m => ({ default: m.SalvadorLiveView })));
+const SalvoOfficialView = React.lazy(() => import('./views/SalvoOfficialView').then(m => ({ default: m.SalvoOfficialView })));
+const SalvoFePlansView = React.lazy(() => import('./views/SalvoFePlansView').then(m => ({ default: m.SalvoFePlansView })));
+const SalvoFeAdminDashboardView = React.lazy(() => import('./views/SalvoFeAdminDashboardView').then(m => ({ default: m.SalvoFeAdminDashboardView })));
+const ViajarNavView = React.lazy(() => import('./views/ViajarNavView').then(m => ({ default: m.ViajarNavView })));
+const StreetViewExperience = React.lazy(() => import('./components/StreetViewExperience').then(m => ({ default: m.StreetViewExperience })));
+
+// Loading Fallback das Marés
+const MaresLoadingFallback = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center animate-in fade-in">
+    <div className="w-12 h-12 rounded-2xl bg-[#0F4C81]/10 text-[#0F4C81] flex items-center justify-center text-2xl animate-pulse mb-3">
+      🌊
+    </div>
+    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+      Navegando nas Marés de Salvador...
+    </p>
+  </div>
+);
 
 export default function App() {
   // App Phase: 'splash' | 'onboarding' | 'auth' | 'app'
@@ -1148,6 +1165,7 @@ export default function App() {
           isForYouFullExperience ? 'flex-1 h-full min-h-0 flex flex-col overflow-hidden pb-0' : 'flex-1 pb-24 md:pb-8'
         }`}
       >
+        <React.Suspense fallback={<MaresLoadingFallback />}>
         {/* If viewing Street View 360° Experience */}
         {activeStreetViewStore ? (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -1224,41 +1242,11 @@ export default function App() {
             onNavigateToTab={(tab) => setCurrentTab(tab as ActiveTab)}
           />
         ) : currentTab === 'offers' ? (
-
           <OffersView
             stores={stores}
             onSelectStore={(st) => setSelectedStoreId(st.id)}
             onOpenChat={handleOpenChatWithStore}
             onOpenStreetView={(st) => setActiveStreetViewStore(st)}
-          />
-        ) : currentTab === 'for_you' ? (
-          <ForYouSocialView
-            currentUser={currentUser}
-            stores={stores}
-            events={events}
-            onSelectStore={(st) => setSelectedStoreId(st.id)}
-            onOpenChat={handleOpenChatWithStore}
-            onNavigateTab={(tab) => {
-              setSelectedStoreId(null);
-              setActiveStreetViewStore(null);
-              if (tab !== 'profile') {
-                setViewingProfileUserId(null);
-              }
-              setCurrentTab(tab);
-            }}
-            onOpenAuth={() => setAppPhase('auth')}
-            onOpenMerchantRegister={() => {
-              setSelectedStoreId(null);
-              setActiveStreetViewStore(null);
-              setViewingProfileUserId(null);
-              setCurrentTab('merchant_register');
-            }}
-            onRoleChange={handleRoleChange}
-            favoriteStoreIds={favorites}
-            onToggleFavoriteStore={handleToggleFavorite}
-            unreadMessagesCount={conversations.reduce((acc, c) => acc + c.unreadCount, 0)}
-            activeOffersCount={stores.reduce((acc, s) => acc + (s.offers ? s.offers.length : 0), 0)}
-            favoritesCount={favorites.length}
           />
         ) : currentTab === 'chat' ? (
           <ChatView
@@ -1273,16 +1261,7 @@ export default function App() {
                 : undefined
             }
           />
-        ) : currentTab === 'favorites' ? (
-          <FavoritesView
-            favoriteStores={favoriteStores}
-            onToggleFavorite={handleToggleFavorite}
-            onSelectStore={(st) => setSelectedStoreId(st.id)}
-            onOpenChat={handleOpenChatWithStore}
-            onOpenStreetView={(st) => setActiveStreetViewStore(st)}
-            onExploreClick={() => setCurrentTab('explore')}
-          />
-        ) : currentTab === 'profile' ? (
+        ) : (
           <UserProfileView
             currentUser={currentUser}
             targetUser={activeViewingUser}
@@ -1305,7 +1284,7 @@ export default function App() {
             }}
             onNavigateToMerchantRegister={() => {
               setViewingProfileUserId(null);
-              setCurrentTab('merchant_register');
+              setCurrentTab('profile');
             }}
             onSendFriendRequest={handleSendFriendRequest}
             onAcceptFriendRequest={handleAcceptFriendRequest}
@@ -1330,79 +1309,8 @@ export default function App() {
               }
             }}
           />
-        ) : currentTab === 'events' ? (
-          <EventsView
-            events={events}
-            currentUser={currentUser}
-            onCreateEvent={handleCreateEvent}
-            onUpdateUser={(updated) => setCurrentUser((prev) => ({ ...prev, ...updated }))}
-            onOpenAuth={() => setAppPhase('auth')}
-          />
-        ) : currentTab === 'weather_traffic' ? (
-          <SalvadorLiveView
-            onNavigateToTab={(t) => setCurrentTab(t)}
-            onSelectStore={(st) => {
-              setSelectedStoreId(st.id);
-              setCurrentTab('explore');
-            }}
-            allStores={stores}
-          />
-        ) : currentTab === 'salvo_official' || (currentTab as string) === 'salvooficial' ? (
-          <SalvoOfficialView
-            currentUser={currentUser}
-            onNavigateToTab={(t) => setCurrentTab(t)}
-          />
-        ) : currentTab === 'salvo_fe' ? (
-          <SalvoFePlansView
-            currentUser={currentUser}
-            onNavigateToAdmin={() => setCurrentTab('salvofe_admin')}
-            onAdCreatedSuccess={() => {}}
-          />
-        ) : currentTab === 'salvofe_admin' ? (
-          <SalvoFeAdminDashboardView
-            onBackToPlans={() => setCurrentTab('salvo_fe')}
-          />
-        ) : currentTab === 'merchant_dashboard' ? (
-          <MerchantDashboardView
-            store={currentMerchantStore}
-            onUpdateStore={handleUpdateStore}
-            conversations={conversations}
-            onSendMessage={handleSendMessage}
-            currentUser={currentUser}
-            allStores={stores}
-            allUsers={users}
-            storeFollows={storeFollows}
-            storePartnerships={storePartnerships}
-            onProposePartnership={handleProposeStorePartnership}
-            onAcceptPartnership={handleAcceptStorePartnership}
-            onDeclinePartnership={handleDeclineStorePartnership}
-            onEndPartnership={handleEndStorePartnership}
-            onSelectStore={(sId) => {
-              setSelectedStoreId(sId);
-              setCurrentTab('explore');
-            }}
-            onViewUserProfile={handleViewUserProfile}
-          />
-        ) : currentTab === 'admin' || currentTab === 'admin_dashboard' ? (
-          <AdminDashboardView
-            stores={stores}
-            events={events}
-            onApproveStore={handleApproveStore}
-            onRejectStore={handleRejectStore}
-            onDeleteStore={handleDeleteStore}
-            onSelectStore={(st) => setSelectedStoreId(st.id)}
-            onApproveEvent={handleApproveEvent}
-            onRejectEvent={handleRejectEvent}
-            onToggleFeatureEvent={handleToggleFeatureEvent}
-            onDeleteEvent={handleDeleteEvent}
-          />
-        ) : currentTab === 'merchant_register' ? (
-
-          <MerchantRegisterView
-            onRegisterStore={handleRegisterStore}
-            onBack={() => setCurrentTab('explore')}
-          />
-        ) : null}
+        )}
+        </React.Suspense>
       </main>
 
       {/* Mobile Bottom Navigation (hidden in Para Mim 3-column experience) */}
@@ -1470,6 +1378,12 @@ export default function App() {
 
       {/* Floating Smart Radio Player of Salvador & Bahia */}
       <FloatingRadioPlayer />
+
+      {/* SuperApp Modals — "A Cidade das Marés" */}
+      <AcarajeRouletteModal />
+      <OndaDoDendeModal />
+      <HerancaDigitalModal />
+      <PrevisaoMareModal />
     </div>
   );
 }
